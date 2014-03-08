@@ -3,157 +3,383 @@ package nl.dcs.da.tss;
 import java.util.ArrayList;
 import java.util.List;
 
-public class State
-	implements Battlefield 
+import nl.dcs.da.tss.events.ActorAttack;
+import nl.dcs.da.tss.events.Event;
+import nl.dcs.da.tss.events.Heal;
+import nl.dcs.da.tss.events.PlayerMove;
+import nl.dcs.da.tss.util.StateLogger;
+
+public class State implements Battlefield
 {
-	
-	private long clock;	
-	private Element[][] battlefield = new Element[25][25];
-	
-	List<Listener> listeners = new ArrayList<Listener>();
-	
-	
-	public void Consume(Event event)
+
+	public static final int size = 25;
+
+	private long clock;
+	private final Actor[][] battlefield = new Actor[25][25];
+	private final List<Listener> listeners = new ArrayList<Listener>();
+	private final StateLogger history = new StateLogger();
+
+
+	/**
+	 * Consume an event
+	 * 
+	 * @param event the event to be consumed
+	 */
+	public synchronized void consume(Event event)
 	{
-		// TODO
 		if (event instanceof PlayerMove)
 		{
-			Consume((PlayerMove) event);
+			consume((PlayerMove) event);
+		}
+		else if (event instanceof ActorAttack)
+		{
+			consume((ActorAttack) event);
+		}
+		else if (event instanceof Heal)
+		{
+			consume(event);
+		}
+		else
+		{
+			throw new IllegalArgumentException("Tried to consume unknown event type");
 		}
 	}
-	
-	
-	public void Consume(PlayerMove move)
-	{
-		Point current = this.getActorLocation(move.getPlayer());
-		Point target            = move.getTarget();
-		Player player = this.getPlayer(current);
-		
-		// Ignore if illegal move
-		if ( !current.adjacent(target))
-			return; // Too far to jump to
-		if ( this.getPlayer(target) != null )
-			return; // Location not empty
-		if ( !player.equals(move.getPlayer()) )
-			return; // Commanding wrong player
-		
-		// Execute event
-		this.set(current, null);
-		this.set(target, player);
-		
-		// Notify listeners of changes
-		onChanged();
-	}
-	
-	
+
+
 	/**
-	 * Sets the clock and consumes events to catch up.
-	 * The new time can only be greater than the current time.
+	 * Consume a move event
+	 * 
+	 * @param move
+	 */
+	public synchronized void consume(PlayerMove move)
+	{
+		Point current = this.findActor(move.getPlayer());
+		Point target = move.getTarget();
+		Player player = this.getAsPlayer(current);
+
+		// Detect illegal move
+		String ignore = null;
+		// Player not in game
+		if (current == null)
+			ignore = "player not on battlefield";
+		// Too far to jump to
+		else if (!current.adjacent(target))
+			ignore = "too far";
+		// Location not empty
+		else if (this.get(target) != null)
+			ignore = "location not empty";
+		// Commanding wrong player
+		else if (!player.equals(move.getPlayer()))
+			ignore = "not commanding this player";
+		else
+			ignore = null;
+
+		if (ignore != null)
+		{
+			// Ignore illegal move
+			history.log("IGNORED:", move, ":", ignore);
+		}
+		else
+		{
+			// Execute event
+			this.set(current, null);
+			this.set(target, player);
+
+			history.log(move);
+
+			// Notify listeners of changes
+			onChanged();
+		}
+	}
+
+
+	/**
+	 * Consume an attack event
+	 * 
+	 * @param attack
+	 */
+	public synchronized void consume(ActorAttack attack)
+	{
+		Point current = this.findActor(attack.getAttacker());
+		Point target = attack.getTarget();
+		Actor attacker = this.get(current);
+		Actor victim = this.get(target);
+
+		// Detect illegal move
+		String ignore = null;
+		// Player not found
+		if (current == null)
+			ignore = "Actor not on the battlefield";
+		// Victim not found
+		else if (victim == null)
+			ignore = "Target not found";
+		// Target too far
+		else if (current.distance(target) > 2)
+			ignore = "Target too far";
+		// Target null or not an opponent)
+		else if ((attacker instanceof Player && victim instanceof Player) || (attacker instanceof Dragon && victim instanceof Dragon))
+			ignore = "Attacker and victim are not opponents";
+		// Commanding wrong actor
+		else if (!attacker.equals(attack.getAttacker()))
+			ignore = "Commanding wrong actor";
+		else
+			ignore = null;
+
+
+		if (ignore != null)
+		{
+			// Ignore illegal move
+			history.log("IGNORED:", attack, ":", ignore);
+		}
+		else
+		{
+			// Deliver damage
+			int ap = attacker.getAP();
+			victim.receiveDamage(ap);
+
+			history.log(attack);
+
+			// Remove victim if dead
+			if (victim.getHP() <= 0)
+			{
+				this.set(target, null);
+				history.log(victim, "died");
+			}
+
+			// Notify listeners
+			onChanged();
+		}
+	}
+
+
+	/**
+	 * Consume a healing event
+	 * 
+	 * @param heal
+	 */
+	public synchronized void consume(Heal heal)
+	{
+		Point healerLocation = this.findActor(heal.getHealer());
+		Point targetLocation = this.findActor(heal.getTarget());
+		Player healer = getAsPlayer(healerLocation);
+		Player target = getAsPlayer(targetLocation);
+
+		// Detect illegal move
+		String ignore = null;
+		// healer not found
+		if (healer == null)
+			ignore = "Healer not found or not a player";
+		// target not found
+		else if (target == null)
+			ignore = "Target not found or not a player";
+		// target too far
+		else if (healerLocation.distance(targetLocation) > 5)
+			ignore = "Target too far";
+		// Healing self
+		else if (healer.equals(target))
+			ignore = "Cannot heal one's self";
+		else
+			ignore = null;
+
+		if (ignore != null)
+		{
+			// Ignore illegal move
+			history.log("IGNORED:", heal, ":", ignore);
+		}
+		else
+		{
+			// Execute event
+			int ap = healer.getAP();
+			target.heal(ap);
+
+			history.log(heal);
+
+			// Notify listeners
+			this.onChanged();
+		}
+	}
+
+
+	/**
+	 * Sets the clock and consumes events to catch up. The new time can only be
+	 * greater than the current time.
+	 * 
 	 * @param time The new simulation time for this state.
 	 */
-	public void setClock(long time)
+	public synchronized void setClock(long time)
 	{
 		if (time < this.clock)
 			throw new IllegalArgumentException("Cannot roll back time");
-		
+
 		clock = time;
-		
+
 		// TODO consume events
 	}
-	
-	
-	public Point getActorLocation(long actor)
+
+
+	/**
+	 * Find the location of an actor
+	 * 
+	 * @param actor The id of the actor
+	 * @return The location of the actor
+	 */
+	@Override
+	public synchronized Point findActor(long actor)
 	{
 		// TODO optimise
-		for ( int x=0 ; x<battlefield.length ; x++ )
-			for ( int y=0 ; y<battlefield[x].length ; y++ )
-				if ( battlefield[x][y] != null )
-					if ( battlefield[x][y].equals(actor) )
-						return new Point(x,y);
+		for (int x = 0; x < battlefield.length; x++)
+			for (int y = 0; y < battlefield[x].length; y++)
+				if (battlefield[x][y] != null)
+					if (battlefield[x][y].equals(actor))
+						return new Point(x, y);
 		return null;
 	}
-	
-	
-	public Actor getActor(long actorId)
+
+
+	/**
+	 * Get player at location
+	 * 
+	 * @param location
+	 * @return A player instance, or null if none is found
+	 */
+	public synchronized Player getAsPlayer(Point location)
 	{
-		// optimise
-		for ( int x=0 ; x<battlefield.length ; x++ )
-			for ( int y=0 ; y<battlefield[x].length ; y++ )
-				if ( battlefield[x][y] != null )
-					if ( battlefield[x][y].equals(actorId) )
-						return (Actor) battlefield[x][y];
-		return null;
-	}
-	
-	
-	public Player getPlayer(Point location)
-	{
-		Element element = get(location);
-		if ( element instanceof Player )
+		if (location == null)
+			return null;
+
+		Actor element = get(location);
+		if (element instanceof Player)
 			return (Player) element;
 		else
 			return null;
 	}
 
-	
+
+	/**
+	 * Get dragon at location
+	 * 
+	 * @param location
+	 * @return A dragon instance, or null if none is found
+	 */
+	public synchronized Dragon getAsDragon(Point location)
+	{
+		if (location == null)
+			return null;
+
+		Actor element = get(location);
+		if (element instanceof Dragon)
+			return (Dragon) element;
+		else
+			return null;
+	}
+
+
 	/**
 	 * Sets the value at a place at the battlefield
+	 * 
 	 * @param target The location in the battlefield
 	 * @param value The element
 	 * @return The new value at the location
 	 */
-	public Element set(Point target, Element value)
+	public synchronized Actor set(Point target, Actor value)
 	{
 		return this.battlefield[target.getX()][target.getY()] = value;
 	}
-	
 
+
+	/**
+	 * The the contents at location
+	 */
 	@Override
-	public Element get(Point point)
+	public synchronized Actor get(Point point)
 	{
 		return get(point.getX(), point.getY());
 	}
 
 
+	/**
+	 * Get the contents at location
+	 */
 	@Override
-	public Element get(int x, int y)
+	public synchronized Actor get(int x, int y)
 	{
 		return this.battlefield[x][y];
 	}
 
 
+	/**
+	 * Get a deep copy of this state
+	 */
 	@Override
-	public void addListener(Listener listener)
+	public synchronized State clone()
 	{
-		this.listeners.add(listener);		
+		State clone = new State();
+		for (int x = 0; x < size; x++)
+			for (int y = 0; y < size; y++)
+			{
+				Point point = new Point(x, y);
+				clone.set(point, get(point).clone());
+			}
+		return clone;
 	}
-	
-	
+
+
+	/**
+	 * Same as clone
+	 */
+	@Override
+	public synchronized State snapshot()
+	{
+		return clone();
+	}
+
+
+	/**
+	 * Add another listener to the subscribers' list
+	 */
+	@Override
+	public synchronized void addListener(Listener listener)
+	{
+		this.listeners.add(listener);
+	}
+
+
 	/**
 	 * Notify all listeners that an action has been executed
 	 */
 	public void onChanged()
 	{
-		for ( Listener listener : listeners )
+		for (Listener listener : listeners)
 			listener.onStateChanged();
 	}
-	
-	
+
+
+	/**
+	 * Get the logs for this state
+	 * 
+	 * @return
+	 */
+	public synchronized Iterable<String> getHistory()
+	{
+		return history;
+	}
+
+
 	@Override
 	public String toString()
 	{
 		String rv = "";
-		for ( int y=0 ; y<25 ; y++ )
+		for (int y = 0; y < 25; y++)
 		{
-			for ( int x=0 ; x<25 ; x++ )
+			for (int x = 0; x < 25; x++)
 			{
-				Element el = get(x,y);
-				if ( el instanceof Player )
-					rv += "P";
-				else if ( el instanceof Dragon )
-					rv += "D";
+				Actor el = get(x, y);
+				if (el instanceof Player)
+					rv += " P ";
+				else if (el instanceof Dragon)
+					rv += " D ";
 				else
-					rv += " ";
+					rv += " . ";
 			}
 			rv += "\n";
 		}

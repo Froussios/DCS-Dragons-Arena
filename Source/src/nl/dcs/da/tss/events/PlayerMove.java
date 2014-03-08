@@ -1,4 +1,6 @@
-package nl.dcs.da.tss;
+package nl.dcs.da.tss.events;
+
+import nl.dcs.da.tss.Point;
 
 
 public class PlayerMove extends Event
