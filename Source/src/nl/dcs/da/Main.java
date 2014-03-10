@@ -5,17 +5,21 @@ import java.util.Scanner;
 import nl.dcs.da.tss.Actor;
 import nl.dcs.da.tss.Battlefield;
 import nl.dcs.da.tss.Dragon;
+import nl.dcs.da.tss.EventQueue;
 import nl.dcs.da.tss.Player;
 import nl.dcs.da.tss.Point;
-import nl.dcs.da.tss.State;
+import nl.dcs.da.tss.SynchronizedState;
 import nl.dcs.da.tss.events.ActorAttack;
+import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.events.Heal;
 import nl.dcs.da.tss.events.PlayerMove;
 
-public class Main implements Battlefield.Listener
+public class Main
+		implements Battlefield.Listener
 {
 
-	private final State state = new State();
+	private final EventQueue events = new EventQueue();
+	private final SynchronizedState state = new SynchronizedState(0, events);
 
 
 	/**
@@ -79,23 +83,20 @@ public class Main implements Battlefield.Listener
 						x = scanner.nextInt();
 						y = scanner.nextInt();
 						PlayerMove move = new PlayerMove(0, id, new Point(x, y));
-						state.consume(move);
-						System.out.println("Submitted: " + move);
+						feedEvent(move);
 						break;
 					case "attack":
 						id = scanner.nextInt();
 						x = scanner.nextInt();
 						y = scanner.nextInt();
 						ActorAttack attack = new ActorAttack(0, id, new Point(x, y));
-						state.consume(attack);
-						System.out.println("Submitted: " + attack);
+						feedEvent(attack);
 						break;
 					case "heal":
 						id = scanner.nextInt();
 						long idt = scanner.nextInt();
 						Heal heal = new Heal(0, id, idt);
-						state.consume(heal);
-						System.out.println("Submitted: " + heal);
+						feedEvent(heal);
 						break;
 					case "history":
 						for (String message : state.getHistory())
@@ -108,6 +109,13 @@ public class Main implements Battlefield.Listener
 		{
 			scanner.close();
 		}
+	}
+
+
+	private void feedEvent(Event event)
+	{
+		state.consume(event);
+		System.out.println("Submitted: " + event);
 	}
 
 

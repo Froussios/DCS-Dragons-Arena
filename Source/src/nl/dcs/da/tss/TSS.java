@@ -1,18 +1,29 @@
 package nl.dcs.da.tss;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Iterator;
 
+import nl.dcs.da.tss.events.Event;
 
-public class TSS implements Battlefield
+public class TSS
+		implements Battlefield
 {
 
-	private final ArrayList<State> states = new ArrayList<State>();
+	private final ArrayDeque<SynchronizedState> states = new ArrayDeque<SynchronizedState>();
 	private final ArrayList<Long> delays = new ArrayList<Long>();
 	private final ArrayList<Boolean> inSync = new ArrayList<Boolean>();
 
+	private long simulationClock;
 	private final EventQueue events = new EventQueue();
 
 
+	/**
+	 * Create a new TSS synchronisation
+	 * 
+	 * @param maxDelay Upon receipt of event that are older than maxDelay, an
+	 *            OutOfSyncException may be thrown
+	 */
 	public TSS(long maxDelay)
 	{
 		if (maxDelay <= 0)
@@ -21,7 +32,7 @@ public class TSS implements Battlefield
 		long delay = 1;
 		while (delay <= maxDelay)
 		{
-			states.add(new State());
+			states.add(new SynchronizedState(0 - delay, events));
 			delays.add(delay);
 			inSync.add(true);
 
@@ -30,45 +41,92 @@ public class TSS implements Battlefield
 	}
 
 
-
-	@Override
-	public Actor get(Point point)
+	/**
+	 * Receive event. The event may be either local or from the network. Local
+	 * logs and states will be updated accordingly.
+	 * 
+	 * @param event The event
+	 * @throws OutOfSyncException
+	 */
+	public synchronized void receiveEvent(Event event) throws OutOfSyncException
 	{
+		// Add event to history
+		events.add(event);
 
-	}
+		// Reset states as needed
+		SynchronizedState previousState = null;
+		Iterator<SynchronizedState> reverseIterator = states.descendingIterator();
+		while (reverseIterator.hasNext())
+		{
+			SynchronizedState state = reverseIterator.next();
 
+			if (state.getClock() > event.getSimulationTime())
+			{
+				// State is out of sync. Recover from previous state
 
-	@Override
-	public Actor get(int x, int y)
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+				if (previousState == null)
+					// There is no previous state to recover from
+					throw new OutOfSyncException();
 
-
-	@Override
-	public Point findActor(long id)
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public void addListener(Listener listener)
-	{
-		// TODO Auto-generated method stub
-
+				// Recover from previous state
+				state.loadFrom(previousState);
+				state.catchup();
+			}
+		}
 	}
 
 
 	/**
-	 * @param args
+	 * Get the current time for the simulation. This is not necessarily equal to
+	 * the time of the leading state.
+	 * 
+	 * @return The time
 	 */
-	public static void main(String[] args)
+	public synchronized long getSimulationTime()
 	{
-		// TODO Auto-generated method stub
+		return this.simulationClock;
+	}
 
+
+	/**
+	 * Increment the time for this simulation
+	 * 
+	 * @param timespan The amount to increment the time by
+	 */
+	public synchronized void incrementTime(long timespan)
+	{
+		this.simulationClock += timespan;
+		// Increment the time for every state
+		for (SynchronizedState state : states)
+			state.setClock(state.getClock() + timespan);
+	}
+
+
+	@Override
+	public synchronized Actor get(Point point)
+	{
+		return getLeadingState().get(point);
+	}
+
+
+	@Override
+	public synchronized Actor get(int x, int y)
+	{
+		return getLeadingState().get(x, y);
+	}
+
+
+	@Override
+	public synchronized Point findActor(long id)
+	{
+		return getLeadingState().findActor(id);
+	}
+
+
+	@Override
+	public synchronized void addListener(Listener listener)
+	{
+		getLeadingState().addListener(listener);
 	}
 
 
@@ -82,9 +140,15 @@ public class TSS implements Battlefield
 	}
 
 
-	public State getLeadingState()
+	/**
+	 * Get the most up-to-date state. The instance may be modified after being
+	 * returned.
+	 * 
+	 * @return
+	 */
+	protected synchronized SynchronizedState getLeadingState()
 	{
-		return states.get(0);
+		return states.getFirst();
 	}
 
 }

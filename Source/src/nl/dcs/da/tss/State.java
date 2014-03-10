@@ -9,12 +9,20 @@ import nl.dcs.da.tss.events.Heal;
 import nl.dcs.da.tss.events.PlayerMove;
 import nl.dcs.da.tss.util.StateLogger;
 
-public class State implements Battlefield
+
+/**
+ * A state of the game that can consume events and hold logs.
+ * 
+ * @author Chris
+ * 
+ */
+public class State
+		implements Battlefield
 {
 
 	public static final int size = 25;
 
-	private long clock;
+
 	private final Actor[][] battlefield = new Actor[25][25];
 	private final List<Listener> listeners = new ArrayList<Listener>();
 	private final StateLogger history = new StateLogger();
@@ -201,23 +209,6 @@ public class State implements Battlefield
 
 
 	/**
-	 * Sets the clock and consumes events to catch up. The new time can only be
-	 * greater than the current time.
-	 * 
-	 * @param time The new simulation time for this state.
-	 */
-	public synchronized void setClock(long time)
-	{
-		if (time < this.clock)
-			throw new IllegalArgumentException("Cannot roll back time");
-
-		clock = time;
-
-		// TODO consume events
-	}
-
-
-	/**
 	 * Find the location of an actor
 	 * 
 	 * @param actor The id of the actor
@@ -321,6 +312,27 @@ public class State implements Battlefield
 				clone.set(point, get(point).clone());
 			}
 		return clone;
+	}
+
+
+	/**
+	 * Copies the state of another State instance. Keeps listeners
+	 * 
+	 * @param other the original state to copy from
+	 */
+	public synchronized void loadFrom(State other)
+	{
+		// Copy map
+		for (int x = 0; x < size; x++)
+			for (int y = 0; y < size; y++)
+			{
+				Point point = new Point(x, y);
+				this.set(point, other.get(point));
+			}
+
+		// Copy logs
+		this.history.clear();
+		this.history.addAll(other.history);
 	}
 
 

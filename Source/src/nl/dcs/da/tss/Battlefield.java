@@ -66,5 +66,5 @@ public interface Battlefield
 	 * 
 	 * @return
 	 */
-	public State snapshot();
+	public Battlefield snapshot();
 }

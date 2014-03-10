@@ -6,18 +6,34 @@ public class Point
 	private final int x, y;
 
 
+	/**
+	 * Get the X coordinate
+	 * 
+	 * @return
+	 */
 	public int getX()
 	{
 		return x;
 	}
 
 
+	/**
+	 * The the Y coordinate
+	 * 
+	 * @return
+	 */
 	public int getY()
 	{
 		return y;
 	}
 
 
+	/**
+	 * A new immutable Point
+	 * 
+	 * @param x
+	 * @param y
+	 */
 	public Point(int x, int y)
 	{
 		this.x = x;
@@ -49,6 +65,9 @@ public class Point
 	}
 
 
+	/**
+	 * Two points are equal if all of their coordinates are the same
+	 */
 	@Override
 	public boolean equals(Object obj)
 	{

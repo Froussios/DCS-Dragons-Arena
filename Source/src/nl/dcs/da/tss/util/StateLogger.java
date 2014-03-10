@@ -5,10 +5,27 @@ import java.util.LinkedList;
 import java.util.List;
 
 
-public class StateLogger implements Iterable<String>
+public class StateLogger
+		extends LinkedList<String>
+		implements Iterable<String>
 {
 
-	private final List<String> history = new LinkedList<String>();
+	/**
+	 * Boring
+	 */
+	private static final long serialVersionUID = -772804910769638261L;
+
+
+	/**
+	 * Now a mirror of this
+	 */
+	private final List<String> history;
+
+
+	public StateLogger()
+	{
+		history = this; // Lazy rework
+	}
 
 
 	/**
