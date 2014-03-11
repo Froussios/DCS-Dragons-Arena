@@ -1,57 +1,38 @@
 package nl.dcs.da.tss;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.Queue;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Observable;
+import java.util.Set;
 import nl.dcs.da.tss.events.Event;
 
 
-public class EventQueue implements Queue<Event>
+public class EventQueue  extends LinkedHashMap<Event,Integer> 
 {
 
-
-
-	public Iterable<Event> getEvents(long since, long upUntil)
+	public List<Event> getEvents(long since, long upUntil)
 	{
-		// TODO implement
-		return null;
+		List<Event> result = new ArrayList<>();
+                for (Event e : this.keySet()){
+                    if (since < e.getSimulationTime() && e.getSimulationTime() > upUntil) {
+                        result.add(e);
+                    }
+                }
+                return result;
 	}
 
 
 	public void trimEvents(long before)
 	{
-		// TODO implement
+              for (Event e : this.keySet()){
+                    if (before < e.getSimulationTime()) {
+                        this.remove(e);
+                    }
+                }
 	}
-
-    @Override
-    public boolean add(Event e) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public boolean offer(Event e) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public Event remove() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public Event poll() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public Event element() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public Event peek() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
 
     @Override
     public int size() {
@@ -64,47 +45,32 @@ public class EventQueue implements Queue<Event>
     }
 
     @Override
-    public boolean contains(Object o) {
+    public boolean containsKey(Object o) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public Iterator<Event> iterator() {
+    public boolean containsValue(Object o) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public Object[] toArray() {
+    public Integer get(Object o) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public <T> T[] toArray(T[] ts) {
+    public Integer put(Event k, Integer v) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public boolean remove(Object o) {
+    public Integer remove(Object o) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public boolean containsAll(Collection<?> clctn) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public boolean addAll(Collection<? extends Event> clctn) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public boolean removeAll(Collection<?> clctn) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public boolean retainAll(Collection<?> clctn) {
+    public void putAll(Map<? extends Event, ? extends Integer> map) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
@@ -113,6 +79,21 @@ public class EventQueue implements Queue<Event>
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    @Override
+    public Set<Event> keySet() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 
+    @Override
+    public Collection<Integer> values() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    void add(Event event) {
+        super.put(event, 0);
+    }
+
+
+ 
 
 }
