@@ -1,13 +1,9 @@
 package nl.dcs.da.tss.util;
 
-import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 
 
-public class StateLogger
-		extends LinkedList<String>
-		implements Iterable<String>
+public class StateLogger extends LinkedList<String>
 {
 
 	/**
@@ -16,15 +12,12 @@ public class StateLogger
 	private static final long serialVersionUID = -772804910769638261L;
 
 
-	/**
-	 * Now a mirror of this
-	 */
-	private final List<String> history;
+
 
 
 	public StateLogger()
 	{
-		history = this; // Lazy rework
+		super(); // Lazy rework
 	}
 
 
@@ -38,7 +31,7 @@ public class StateLogger
 		String message = "";
 		for (Object arg : args)
 			message += arg + " ";
-		history.add(message);
+		this.add(message);
 	}
 
 
@@ -49,15 +42,11 @@ public class StateLogger
 	 */
 	public void log(String message)
 	{
-		history.add(message);
+		this.add(message);
 	}
 
 
-	@Override
-	public Iterator<String> iterator()
-	{
-		return history.iterator();
-	}
+	
 
 
 	/**
@@ -77,7 +66,7 @@ public class StateLogger
 	 */
 	public void print(int count)
 	{
-		for (String message : history.subList(history.size() - count, history.size()))
+		for (String message : this.subList(this.size() - count, this.size()))
 			System.out.println(message);
 	}
 }
