@@ -20,11 +20,12 @@ import nl.dcs.da.tss.events.Event;
 public class Server {
     
     public static void main (String[] args) throws RemoteException{
+        System.out.println("Server start");
         try {
         	
-            RMIInterface skeleton = (RMIImplementation) UnicastRemoteObject.exportObject(new RMIImplementation(), 10000); 
-            Registry registry = LocateRegistry.createRegistry(10000);
-            registry.rebind("Recieve", skeleton); // publie notre instance sous le nom "Add"
+            RMIInterface skeleton = (RMIInterface) UnicastRemoteObject.exportObject(new RMIImplementation()); 
+            Registry registry = LocateRegistry.createRegistry(1099);
+            registry.rebind("Recieve", skeleton); 
         } catch (RemoteException e) {
         }
     }

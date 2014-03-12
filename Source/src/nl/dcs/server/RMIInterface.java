@@ -16,7 +16,7 @@ import nl.dcs.da.tss.events.Event;
  */
 public interface RMIInterface extends Remote {
     
-    public void recieveEvent (long sender, Event e) throws RemoteException;
+    public void recieveEvent (Event e) throws RemoteException;
     
     
 }
