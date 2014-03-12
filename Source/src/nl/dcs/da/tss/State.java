@@ -16,7 +16,8 @@ import nl.dcs.da.tss.util.StateLogger;
  * @author Chris
  * 
  */
-public class State implements Battlefield
+public class State
+		implements Battlefield
 {
 
 	public static final int size = 25;
@@ -44,7 +45,7 @@ public class State implements Battlefield
 		}
 		else if (event instanceof Heal)
 		{
-			consume(event);
+			consume((Heal) event);
 		}
 		else
 		{
@@ -283,6 +284,9 @@ public class State implements Battlefield
 	@Override
 	public synchronized Actor get(Point point)
 	{
+		if (point == null)
+			throw new IllegalArgumentException();
+
 		return get(point.getX(), point.getY());
 	}
 
@@ -308,8 +312,12 @@ public class State implements Battlefield
 			for (int y = 0; y < size; y++)
 			{
 				Point point = new Point(x, y);
-				clone.set(point, get(point).clone());
+				Actor value = get(point);
+				if (value != null)
+					value = value.clone();
+				clone.set(point, value);
 			}
+		clone.history.addAll(this.history);
 		return clone;
 	}
 
@@ -326,12 +334,17 @@ public class State implements Battlefield
 			for (int y = 0; y < size; y++)
 			{
 				Point point = new Point(x, y);
-				this.set(point, other.get(point));
+				Actor value = other.get(point);
+				if (value != null)
+					value = value.clone();
+				this.set(point, value);
 			}
 
 		// Copy logs
 		this.history.clear();
 		this.history.addAll(other.history);
+
+		this.onChanged();
 	}
 
 
@@ -376,6 +389,9 @@ public class State implements Battlefield
 	}
 
 
+	/**
+	 * Human-readable representation of this state's map.
+	 */
 	@Override
 	public String toString()
 	{

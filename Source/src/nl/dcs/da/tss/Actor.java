@@ -8,10 +8,16 @@ public abstract class Actor
 
 	private static IncGenerator idGenerator = new IncGenerator();
 
-	private final long id;
+	private long id;
 	private final int startingHP;
 	private int hp;
 	private final int ap;
+
+
+	protected void setID(long value)
+	{
+		this.id = value;
+	}
 
 
 	public long getID()

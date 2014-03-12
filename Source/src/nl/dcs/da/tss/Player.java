@@ -7,7 +7,8 @@ package nl.dcs.da.tss;
  * @author Chris
  * 
  */
-public class Player extends Actor
+public class Player
+		extends Actor
 {
 
 	/**
@@ -42,6 +43,7 @@ public class Player extends Actor
 	{
 		Player clone = new Player(getMaxHP(), getAP());
 		clone.setHP(getHP());
+		clone.setID(getID());
 		return clone;
 	}
 

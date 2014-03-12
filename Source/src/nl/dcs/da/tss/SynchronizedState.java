@@ -10,13 +10,13 @@ import nl.dcs.da.tss.events.Event;
  * @author Chris
  * 
  */
-public class SynchronizedState extends State 
+public class SynchronizedState
+		extends State
+		implements Battlefield
 {
 
 	private long clock = Long.MIN_VALUE;
 	private long lastCatchup = Long.MIN_VALUE;
-
-
 	private final EventQueue events;
 
 
@@ -84,10 +84,23 @@ public class SynchronizedState extends State
 	 */
 	public synchronized void loadFrom(SynchronizedState other)
 	{
-		// Copy battlefield and history
-		super.loadFrom(other);
-
 		// Copy clocks
 		this.clock = other.clock;
+		this.lastCatchup = other.lastCatchup;
+
+		// Copy battlefield and history
+		super.loadFrom(other);
+	}
+
+
+	/**
+	 * Human-readable representation for this state. Includes simulation time
+	 * and map.
+	 */
+	@Override
+	public synchronized String toString()
+	{
+		String rv = "Time: " + this.getClock() + "\n";
+		return rv + super.toString();
 	}
 }

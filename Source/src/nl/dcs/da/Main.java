@@ -1,17 +1,25 @@
 package nl.dcs.da;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Scanner;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import nl.dcs.da.tss.Actor;
 import nl.dcs.da.tss.Battlefield;
 import nl.dcs.da.tss.Dragon;
 import nl.dcs.da.tss.EventQueue;
+import nl.dcs.da.tss.OutOfSyncException;
 import nl.dcs.da.tss.Player;
 import nl.dcs.da.tss.Point;
+import nl.dcs.da.tss.State;
 import nl.dcs.da.tss.SynchronizedState;
+import nl.dcs.da.tss.TSS;
 import nl.dcs.da.tss.events.ActorAttack;
 import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.events.Heal;
+import nl.dcs.da.tss.events.MarkEvent;
 import nl.dcs.da.tss.events.PlayerMove;
 
 public class Main
@@ -19,7 +27,8 @@ public class Main
 {
 
 	private final EventQueue events = new EventQueue();
-	private final SynchronizedState state = new SynchronizedState(0, events);
+	private TSS state;
+	private static final Scanner scanner = new Scanner(System.in);
 
 
 	/**
@@ -34,12 +43,14 @@ public class Main
 
 	public void run()
 	{
-		state.addListener(this);
-		state.set(new Point(10, 10), new Player(20, 5));
+		State start = new State();
+		start.addListener(this);
+		start.set(new Point(10, 10), new Player(20, 5));
+		start.set(new Point(10, 11), new Player(20, 5));
+		start.set(new Point(11, 11), new Dragon(50, 10));
+		state = new TSS(start, 30);
 
 		System.out.println(state);
-
-		Scanner scanner = new Scanner(System.in);
 
 		try
 		{
@@ -47,7 +58,8 @@ public class Main
 			{
 				System.out.print(" > ");
 				String command = scanner.next().toLowerCase();
-				int x, y, id;
+				int x, y;
+				long id, time;
 				Actor e = null;
 
 				switch (command)
@@ -56,6 +68,9 @@ public class Main
 					case "stop":
 						System.out.println("Bye");
 						return;
+					case "test":
+						test();
+						break;
 					case "map":
 						System.out.println(state);
 						break;
@@ -79,28 +94,46 @@ public class Main
 						state.set(new Point(x, y), new Dragon(50, 10));
 						break;
 					case "move":
+						time = scanner.nextLong();
 						id = scanner.nextInt();
 						x = scanner.nextInt();
 						y = scanner.nextInt();
-						PlayerMove move = new PlayerMove(0, id, new Point(x, y));
+						PlayerMove move = new PlayerMove(time, id, new Point(x, y));
 						feedEvent(move);
 						break;
 					case "attack":
+						time = scanner.nextLong();
 						id = scanner.nextInt();
 						x = scanner.nextInt();
 						y = scanner.nextInt();
-						ActorAttack attack = new ActorAttack(0, id, new Point(x, y));
+						ActorAttack attack = new ActorAttack(time, id, new Point(x, y));
 						feedEvent(attack);
 						break;
 					case "heal":
+						time = scanner.nextLong();
 						id = scanner.nextInt();
 						long idt = scanner.nextInt();
-						Heal heal = new Heal(0, id, idt);
+						Heal heal = new Heal(time, id, idt);
 						feedEvent(heal);
 						break;
 					case "history":
-						for (String message : state.getHistory())
+						for (String message : state.snapshot().getHistory())
 							System.out.println(" - " + message);
+						break;
+					case "ff":
+						long timespan = scanner.nextLong();
+						state.incrementTime(timespan);
+						break;
+					case "clocks":
+						for (SynchronizedState st : state.getStates())
+							System.out.println(st.getClock());
+						break;
+					case "events":
+						for (Event event : state.getEventQueue())
+							System.out.println(event);
+						break;
+					default:
+						System.out.println("Learn to type");
 						break;
 				}
 			}
@@ -112,10 +145,33 @@ public class Main
 	}
 
 
+	private static void test()
+	{
+		SortedSet<Event> ss = new TreeSet<Event>();
+		ss.add(new Heal(10, 0, 0));
+		ss.add(new PlayerMove(15, 0, new Point(0, 0)));
+		ss.add(new Heal(20, 0, 0));
+
+		Collection<Event> killset = new ArrayList<Event>(ss.headSet(new MarkEvent(16)));
+		ss.removeAll(killset);
+
+		for (Event e : ss)
+			System.out.println(e);
+	}
+
+
 	private void feedEvent(Event event)
 	{
-		state.consume(event);
-		System.out.println("Submitted: " + event);
+		try
+		{
+			state.receiveEvent(event);
+			System.out.println("Submitted: " + event);
+		}
+		catch (OutOfSyncException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 

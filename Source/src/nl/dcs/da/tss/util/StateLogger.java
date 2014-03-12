@@ -1,9 +1,10 @@
 package nl.dcs.da.tss.util;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 
 
-public class StateLogger extends LinkedList<String>
+public class StateLogger
+		extends ArrayList<String>
 {
 
 	/**
@@ -13,11 +14,8 @@ public class StateLogger extends LinkedList<String>
 
 
 
-
-
 	public StateLogger()
 	{
-		super(); // Lazy rework
 	}
 
 
@@ -45,8 +43,6 @@ public class StateLogger extends LinkedList<String>
 		this.add(message);
 	}
 
-
-	
 
 
 	/**
