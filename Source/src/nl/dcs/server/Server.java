@@ -4,19 +4,20 @@
  * and open the template in the editor.
  */
 
-package nl.dcs.rmi;
+package nl.dcs.server;
 
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 import nl.dcs.da.tss.events.Event;
+
 
 /**
  *
  * @author Ivanis
  */
-public interface RMIInterface extends Remote {
+public class Server {
     
-    public void recieveEvent (long sender, Event e) throws RemoteException;
-    
-    
+    public void main (String[] args){
+        
+    }
+
 }
