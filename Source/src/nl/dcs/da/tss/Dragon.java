@@ -1,7 +1,8 @@
 package nl.dcs.da.tss;
 
 
-public class Dragon extends Actor
+public class Dragon
+		extends Actor
 {
 
 	public Dragon(int hp, int ap)
@@ -28,6 +29,7 @@ public class Dragon extends Actor
 	{
 		Dragon clone = new Dragon(getMaxHP(), getAP());
 		clone.setHP(getHP());
+		clone.setID(getID());
 		return clone;
 	}
 

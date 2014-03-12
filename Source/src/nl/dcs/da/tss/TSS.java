@@ -6,35 +6,65 @@ import java.util.Iterator;
 
 import nl.dcs.da.tss.events.Event;
 
+/**
+ * An implementation of the Trailing State synchronisation algorithm. The
+ * algorithms maintains a set of game states at various delays from real time,
+ * and uses previous states to recover more recent states that are out of sync.
+ * 
+ * In this implementation, trailing states are spaced apart with exponentially
+ * increasing intervals. This guarantees that an event that is N time units late
+ * will cause up to 2N time units to be replayed. Therefore, disruptions in
+ * recent states are cheap to recover, while the memory cost of having a long
+ * recovery window is reduced.
+ * 
+ * @author Chris
+ * 
+ */
 public class TSS
 		implements Battlefield
 {
 
-	private final ArrayDeque<SynchronizedState> states = new ArrayDeque<>();
-	private final ArrayList<Long> delays = new ArrayList<>();
-	private final ArrayList<Boolean> inSync = new ArrayList<>();
+	private final ArrayDeque<SynchronizedState> states = new ArrayDeque<SynchronizedState>();
+	private final ArrayList<Long> delays = new ArrayList<Long>();
+	private final ArrayList<Boolean> inSync = new ArrayList<Boolean>();
 
 	private long simulationClock;
 	private final EventQueue events = new EventQueue();
 
 
 	/**
-	 * Create a new TSS synchronisation
+	 * Get the event queue for this instance.
+	 * 
+	 * @return
+	 */
+	public Iterable<Event> getEventQueue()
+	{
+		return this.events;
+	}
+
+
+	/**
+	 * Create a new TSS synchronisation component
 	 * 
 	 * @param maxDelay Upon receipt of event that are older than maxDelay, an
 	 *            OutOfSyncException may be thrown
 	 */
-	public TSS(long maxDelay)
+	public TSS(State start, long maxDelay)
 	{
 		if (maxDelay <= 0)
 			throw new IllegalArgumentException("Maximum delay cannot be 0");
 
+		// Create trail of states
 		long delay = 1;
 		while (delay <= maxDelay)
 		{
-			states.add(new SynchronizedState(0 - delay, events));
+			SynchronizedState state = new SynchronizedState(0 - delay, events);
+			state.loadFrom(start);
+			states.add(state);
 			delays.add(delay);
 			inSync.add(true);
+
+			System.out.println("Created state@" + state.getClock());
 
 			delay *= 2;
 		}
@@ -66,12 +96,18 @@ public class TSS
 
 				if (previousState == null)
 					// There is no previous state to recover from
-					throw new OutOfSyncException();
+					throw new OutOfSyncException("Last state @" + state.getClock() + " is out of sync.");
+
+				System.out.println("State @" + state.getClock() + " is out of sync. Recovering from @" + previousState.getClock());
 
 				// Recover from previous state
+				long clock = state.getClock();
 				state.loadFrom(previousState);
+				state.setClock(clock);
 				state.catchup();
 			}
+
+			previousState = state;
 		}
 	}
 
@@ -99,9 +135,40 @@ public class TSS
 		// Increment the time for every state
 		for (SynchronizedState state : states)
 			state.setClock(state.getClock() + timespan);
+
+		// Delete events that are too old
+		long before = getLastState().getClock();
+		events.trimEvents(before);
 	}
 
 
+	/**
+	 * DEBUGGING ONLY
+	 * 
+	 * @param point
+	 * @param value
+	 */
+	public synchronized void set(Point point, Actor value)
+	{
+		for (State state : states)
+			state.set(point, value.clone());
+	}
+
+
+	/**
+	 * Get every state in this TSS instance
+	 * 
+	 * @return
+	 */
+	public synchronized Iterable<SynchronizedState> getStates()
+	{
+		return states;
+	}
+
+
+	/**
+	 * Get the contents of the leading state at a specific point.
+	 */
 	@Override
 	public synchronized Actor get(Point point)
 	{
@@ -109,6 +176,9 @@ public class TSS
 	}
 
 
+	/**
+	 * Get the contents of the leading state at a specific point.
+	 */
 	@Override
 	public synchronized Actor get(int x, int y)
 	{
@@ -116,6 +186,9 @@ public class TSS
 	}
 
 
+	/**
+	 * Find the location of an actor in the leading state.
+	 */
 	@Override
 	public synchronized Point findActor(long id)
 	{
@@ -123,6 +196,9 @@ public class TSS
 	}
 
 
+	/**
+	 * Add a listener for changes in the leading state.
+	 */
 	@Override
 	public synchronized void addListener(Listener listener)
 	{
@@ -149,6 +225,28 @@ public class TSS
 	protected synchronized SynchronizedState getLeadingState()
 	{
 		return states.getFirst();
+	}
+
+
+	/**
+	 * Get the least up-to-date state.The instance may be modified after being
+	 * returned.
+	 * 
+	 * @return
+	 */
+	protected synchronized SynchronizedState getLastState()
+	{
+		return states.getLast();
+	}
+
+
+	/**
+	 * Human-readable representation of the leading state.
+	 */
+	@Override
+	public String toString()
+	{
+		return getLeadingState().toString();
 	}
 
 }

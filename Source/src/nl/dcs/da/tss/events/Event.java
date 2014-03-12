@@ -1,7 +1,14 @@
 package nl.dcs.da.tss.events;
 
 
-public class Event implements Comparable<Event>
+/**
+ * A user-submitted action (player or AI) can change the state of a game
+ * 
+ * @author Chris
+ * 
+ */
+public class Event
+		implements Comparable<Event>
 {
 
 	private long time = -1;
@@ -43,6 +50,9 @@ public class Event implements Comparable<Event>
 	}
 
 
+	/**
+	 * Human-readable representation of the event.
+	 */
 	@Override
 	public String toString()
 	{
@@ -51,12 +61,24 @@ public class Event implements Comparable<Event>
 
 
 	/**
-	 * Compares events based on simulation time
+	 * Compares events based on simulation time. Uses issuer id as a tie
+	 * breaker. This has the implication that the same issuer can't create
+	 * multiple events at the same time.
+	 * 
+	 * This creates a bias consistently favouring clients with specific ids,
+	 * when multiple actions occur at the same time. Some kind of bias is
+	 * necessary, however, as the order has to be deterministic across multiple
+	 * machines and multiple replays of the event sequence.
 	 */
 	@Override
 	public int compareTo(Event other)
 	{
-		return Long.compare(this.time, other.time);
+
+		int comparison = Long.compare(this.time, other.time);
+		if (comparison == 0)
+			return Long.compare(this.issuer, other.issuer);
+		else
+			return comparison;
 	}
 
 }

@@ -1,30 +1,63 @@
 package nl.dcs.da.tss;
 
-import nl.dcs.da.tss.events.Event;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
+import nl.dcs.da.tss.events.Event;
+import nl.dcs.da.tss.events.MarkEvent;
 
 public class EventQueue
+		implements Iterable<Event>
 {
 
+	private final SortedSet<Event> events = new TreeSet<Event>();
 
-	public void add(Event event)
+
+	/**
+	 * Add a new event to the event queue
+	 * 
+	 * @param event
+	 */
+	public synchronized void add(Event event)
 	{
-		// TODO implement
+		events.add(event);
 	}
 
 
-	public Iterable<Event> getEvents(long since, long upUntil)
+	/**
+	 * Gets all the events inside a a range of time
+	 * 
+	 * @param since The oldest event, inclusive
+	 * @param until The most recent event, exclusive
+	 * @return The events, from older to recent
+	 */
+	public synchronized Iterable<Event> getEvents(long since, long until)
 	{
-		// TODO implement
-		return null;
+		Event sinceE = new MarkEvent(since);
+		Event untilE = new MarkEvent(until);
+		return events.subSet(sinceE, untilE);
 	}
 
 
-	public void trimEvents(long before)
+	/**
+	 * Removes events that are older than the specified date
+	 * 
+	 * @param before
+	 */
+	public synchronized void trimEvents(long before)
 	{
-		// TODO implement
+		Event mark = new MarkEvent(before);
+		ArrayList<Event> killset = new ArrayList<Event>(events.headSet(mark));
+		events.removeAll(killset);
 	}
 
 
+	@Override
+	public Iterator<Event> iterator()
+	{
+		return events.iterator();
+	}
 
 }
