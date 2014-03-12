@@ -16,8 +16,7 @@ import nl.dcs.da.tss.util.StateLogger;
  * @author Chris
  * 
  */
-public class State
-		implements Battlefield
+public class State implements Battlefield
 {
 
 	public static final int size = 25;

@@ -10,9 +10,9 @@ public class TSS
 		implements Battlefield
 {
 
-	private final ArrayDeque<SynchronizedState> states = new ArrayDeque<SynchronizedState>();
-	private final ArrayList<Long> delays = new ArrayList<Long>();
-	private final ArrayList<Boolean> inSync = new ArrayList<Boolean>();
+	private final ArrayDeque<SynchronizedState> states = new ArrayDeque<>();
+	private final ArrayList<Long> delays = new ArrayList<>();
+	private final ArrayList<Boolean> inSync = new ArrayList<>();
 
 	private long simulationClock;
 	private final EventQueue events = new EventQueue();

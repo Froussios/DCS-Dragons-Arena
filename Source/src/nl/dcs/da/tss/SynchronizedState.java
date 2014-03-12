@@ -10,9 +10,7 @@ import nl.dcs.da.tss.events.Event;
  * @author Chris
  * 
  */
-public class SynchronizedState
-		extends State
-		implements Battlefield
+public class SynchronizedState extends State 
 {
 
 	private long clock = Long.MIN_VALUE;
