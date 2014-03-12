@@ -7,6 +7,9 @@
 package nl.dcs.server;
 
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import nl.dcs.da.tss.events.Event;
 
 
@@ -16,8 +19,14 @@ import nl.dcs.da.tss.events.Event;
  */
 public class Server {
     
-    public void main (String[] args){
-        
+    public static void main (String[] args) throws RemoteException{
+        try {
+        	
+            RMIInterface skeleton = (RMIImplementation) UnicastRemoteObject.exportObject(new RMIImplementation(), 10000); 
+            Registry registry = LocateRegistry.createRegistry(10000);
+            registry.rebind("Recieve", skeleton); // publie notre instance sous le nom "Add"
+        } catch (RemoteException e) {
+        }
     }
 
 }
