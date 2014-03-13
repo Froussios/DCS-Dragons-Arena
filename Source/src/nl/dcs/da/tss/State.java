@@ -24,7 +24,7 @@ public class State
 
 
 	private final Actor[][] battlefield = new Actor[25][25];
-	private final List<Listener> listeners = new ArrayList<Listener>();
+	private final List<Listener> listeners = new ArrayList<>();
 	private final StateLogger history = new StateLogger();
 
 
