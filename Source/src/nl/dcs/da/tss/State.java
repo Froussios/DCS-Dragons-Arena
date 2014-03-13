@@ -1,13 +1,13 @@
 package nl.dcs.da.tss;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import nl.dcs.da.tss.events.ActorAttack;
 import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.events.Heal;
 import nl.dcs.da.tss.events.PlayerMove;
 import nl.dcs.da.tss.util.StateLogger;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**

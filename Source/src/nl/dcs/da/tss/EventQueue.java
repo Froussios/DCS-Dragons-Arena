@@ -1,18 +1,19 @@
 package nl.dcs.da.tss;
 
+import nl.dcs.da.tss.events.Event;
+import nl.dcs.da.tss.events.MarkEvent;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import nl.dcs.da.tss.events.Event;
-import nl.dcs.da.tss.events.MarkEvent;
-
 public class EventQueue
-		implements Iterable<Event>
+		implements Iterable<Event>, Serializable
 {
 
-	private final SortedSet<Event> events = new TreeSet<Event>();
+	private final SortedSet<Event> events = new TreeSet<>();
 
 
 	/**
