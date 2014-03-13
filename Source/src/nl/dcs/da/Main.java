@@ -21,6 +21,7 @@ import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.events.Heal;
 import nl.dcs.da.tss.events.MarkEvent;
 import nl.dcs.da.tss.events.PlayerMove;
+import nl.dcs.server.RMIInterface;
 
 public class Main
 		implements Battlefield.Listener

@@ -12,55 +12,30 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.SynchronousQueue;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.util.StateLogger;
-
+import org.apache.commons.collections4.*;
+import org.apache.commons.collections4.bag.SynchronizedSortedBag;
+import org.apache.commons.collections4.bag.TreeBag;
 /**
+ * 
  *
  * @author Ivanis
  */
-public class RMIImplementation extends UnicastRemoteObject implements RMIInterface {
+public class RMIImplementation   {
+    private static final long serialVersionUID = 1L;
 
-    StateLogger log;
-    Map eventQueue;
-    
-    public RMIImplementation () throws RemoteException{
-        super();
-        
-        log = new StateLogger ();
-        eventQueue = Collections.synchronizedMap(new LinkedHashMap<>());
-        
+    public void recieveEvent(Event e) throws RemoteException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    public RMIImplementation(StateLogger log, LinkedHashMap<Event,Integer> eventQueue) throws RemoteException{
-        super();
-        this.log = log;
-        this.eventQueue = Collections.synchronizedMap(eventQueue);
-    }
-    
-    @Override
-    public void recieveEvent(Event e) throws RemoteException, AccessException {
-        log.add(e.toString());
-        eventQueue.put(e, (Integer) eventQueue.get(e) + 1);
-        if ((Integer) eventQueue.get(e) == 1){
-            try {
-                Registry registry = LocateRegistry.getRegistry();
-                
-                RMIInterface stub = (RMIInterface) registry.lookup("Recieve");
-                stub.recieveEvent(e);
-            } catch (NotBoundException ex) {
-                Logger.getLogger(RMIImplementation.class.getName()).log(Level.SEVERE, null, ex);
-            }
-           
-        }
-        System.out.println(e + " " +   eventQueue.get(e));
-    }
-    
 }
