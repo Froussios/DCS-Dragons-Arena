@@ -1,15 +1,18 @@
 package nl.dcs.da.tss;
 
-public class Point
+import java.io.Serializable;
+
+public class Point implements Serializable
 {
 
 	private final int x, y;
+    private static final long serialVersionUID = 6181684382275406670L;
 
 
 	/**
 	 * Get the X coordinate
 	 * 
-	 * @return
+	 * @return the X coordinate
 	 */
 	public int getX()
 	{

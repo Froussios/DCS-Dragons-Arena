@@ -8,6 +8,7 @@ public class Event implements Comparable<Event>, Serializable
 
 	private long time = -1;
 	private long issuer = -1;
+    private static final long serialVersionUID = -8808638004008501988L;
 
 
 	/**

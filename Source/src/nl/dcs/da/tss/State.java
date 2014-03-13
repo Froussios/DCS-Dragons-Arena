@@ -143,7 +143,7 @@ public class State
 		{
 			// Deliver damage
 			int ap = attacker.getAP();
-			victim.receiveDamage(ap);
+                    int receiveDamage = victim.receiveDamage(ap);
 
 			history.log(attack);
 
