@@ -1,75 +1,92 @@
 package nl.dcs.server;
 
+import nl.dcs.da.ClientInterface;
+import nl.dcs.da.tss.events.Event;
+import nl.dcs.da.tss.util.StateLogger;
+import org.apache.commons.collections4.bag.TreeBag;
+
 import java.net.InetAddress;
 import java.rmi.AccessException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import nl.dcs.da.tss.events.Event;
-import nl.dcs.da.tss.util.StateLogger;
-import org.apache.commons.collections4.bag.TreeBag;
 
 /**
  *
  * @author Ivanis
  */
-public class Server extends UnicastRemoteObject implements RMIInterface{
+public class Server extends UnicastRemoteObject implements ServerInterface {
 
-    
-    private  InetAddress ip;
+    private InetAddress ip;
     private Integer port;
-    private  StateLogger log;  
-    private  TreeBag eventQueue;
+    private StateLogger log;
+    private TreeBag eventQueue;
     private String name;
     private ArrayList<String> broadcast;
-    
-    public Server (InetAddress ip, Integer port, String name, ArrayList<String> broadcast) throws RemoteException{
+    private Set<ClientInterface> clients;
+
+    public Server(InetAddress ip, Integer port, String name, ArrayList<String> broadcast) throws RemoteException {
         this.ip = ip;
         this.port = port;
-        this.log = new StateLogger ();
+        this.log = new StateLogger();
         this.eventQueue = new TreeBag();
         this.name = name;
         this.broadcast = broadcast;
-    } 
+        this.clients = Collections.synchronizedSet(new HashSet<ClientInterface>());
+    }
 
     @Override
-    public void recieveEvent(Event e) throws RemoteException {
+    public void sendEvent(Event e, ClientInterface c) throws RemoteException {
         System.out.println(e);
         log.log(e);
         eventQueue.add(e);
-        if (eventQueue.getCount(e) == 1){
-            for (String s : this.broadcast ){
-                Server server = Servers.getServerByName(s); 
-                
+        // spread to the other servers
+        if (eventQueue.getCount(e) == 1) {
+            for (String s : this.broadcast) {
+                Server server = Servers.getServerByName(s);
+
                 Registry registry = LocateRegistry.getRegistry("127.0.0.1", server.port);
-                
-                RMIInterface stub;
+
+                ServerInterface stub;
                 try {
-                    stub = (RMIInterface) registry.lookup("Recieve");
-                    stub.recieveEvent(e);
-                    System.out.println(stub);
-                } catch (        NotBoundException | AccessException ex) {
+                    stub = (ServerInterface) registry.lookup("SERVER");
+                    stub.sendEvent(e,c);
+                    System.out.println(UnicastRemoteObject.getClientHost());
+                } catch (ServerNotActiveException|NotBoundException | AccessException ex) {
                     Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                } 
+                finally {
+                    continue;
+                }
             }
+// spread to the clients
+            for (ClientInterface client:this.clients){
+                System.out.println(client);
+                client.update(e);
             }
+
         }
+
     }
-    
-    
-    public static void main (String[] args) throws RemoteException{
+
+    public static void main(String[] args) throws RemoteException {
         System.out.println("Server start");
-       
+
         try {
-            Server skeleton = Servers.getServerByName("EPSILON"); 
+            Server skeleton = Servers.getServerByName(args[0]);
             Registry registry = LocateRegistry.createRegistry(skeleton.getPort());
-            registry.rebind("Recieve", skeleton); 
+            registry.rebind("SERVER", skeleton);
             System.out.println(skeleton.getName());
-        } catch (Exception ex) { 
+        } catch (Exception ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -118,5 +135,16 @@ public class Server extends UnicastRemoteObject implements RMIInterface{
     public String toString() {
         return "Server{" + "ip=" + ip + ", port=" + port + ", name=" + name + '}';
     }
- 
+
+    @Override
+    public void register(ClientInterface c) throws RemoteException {
+        this.clients.add(c);
+        System.out.println(c +" " +clients.size());
+    }
+
+    @Override
+    public void unregister(ClientInterface c) throws RemoteException {
+        this.clients.remove(c);
+    }
+
 }
