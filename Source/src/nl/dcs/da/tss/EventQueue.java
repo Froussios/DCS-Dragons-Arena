@@ -20,9 +20,9 @@ public class EventQueue
 	 * 
 	 * @param event
 	 */
-	public synchronized void add(Event event)
+	public synchronized boolean add(Event event)
 	{
-		events.add(event);
+		return events.add(event);
 	}
 
 

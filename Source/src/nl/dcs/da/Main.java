@@ -6,6 +6,7 @@ import java.util.Scanner;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import nl.dcs.da.client.Client;
 import nl.dcs.da.tss.Actor;
 import nl.dcs.da.tss.Battlefield;
 import nl.dcs.da.tss.Dragon;
@@ -29,6 +30,7 @@ public class Main
 	private final EventQueue events = new EventQueue();
 	private TSS state;
 	private static final Scanner scanner = new Scanner(System.in);
+	Client me;
 
 
 	/**
@@ -49,6 +51,7 @@ public class Main
 		start.set(new Point(10, 11), new Player(20, 5));
 		start.set(new Point(11, 11), new Dragon(50, 10));
 		state = new TSS(start, 30);
+		me = new Client(2, state);
 
 		System.out.println(state);
 
@@ -100,6 +103,11 @@ public class Main
 						y = scanner.nextInt();
 						PlayerMove move = new PlayerMove(time, id, new Point(x, y));
 						feedEvent(move);
+						break;
+					case "pmove":
+						x = scanner.nextInt();
+						y = scanner.nextInt();
+						me.Move(new Point(x, y));
 						break;
 					case "attack":
 						time = scanner.nextLong();

@@ -78,37 +78,42 @@ public class TSS
 	 * @param event The event
 	 * @throws OutOfSyncException
 	 */
-	public synchronized void receiveEvent(Event event) throws OutOfSyncException
+	public synchronized boolean receiveEvent(Event event) throws OutOfSyncException
 	{
 		// Add event to history
-		events.add(event);
+		boolean acceptedEvent = events.add(event);
 
-		// Reset states as needed
-		SynchronizedState previousState = null;
-		Iterator<SynchronizedState> reverseIterator = states.descendingIterator();
-		while (reverseIterator.hasNext())
+		if (acceptedEvent)
 		{
-			SynchronizedState state = reverseIterator.next();
-
-			if (state.getClock() > event.getSimulationTime())
+			// Reset states as needed
+			SynchronizedState previousState = null;
+			Iterator<SynchronizedState> reverseIterator = states.descendingIterator();
+			while (reverseIterator.hasNext())
 			{
-				// State is out of sync. Recover from previous state
+				SynchronizedState state = reverseIterator.next();
 
-				if (previousState == null)
-					// There is no previous state to recover from
-					throw new OutOfSyncException("Last state @" + state.getClock() + " is out of sync.");
+				if (state.getClock() > event.getSimulationTime())
+				{
+					// State is out of sync. Recover from previous state
 
-				System.out.println("State @" + state.getClock() + " is out of sync. Recovering from @" + previousState.getClock());
+					if (previousState == null)
+						// There is no previous state to recover from
+						throw new OutOfSyncException("Last state @" + state.getClock() + " is out of sync.");
 
-				// Recover from previous state
-				long clock = state.getClock();
-				state.loadFrom(previousState);
-				state.setClock(clock);
-				state.catchup();
+					System.out.println("State @" + state.getClock() + " is out of sync. Recovering from @" + previousState.getClock());
+
+					// Recover from previous state
+					long clock = state.getClock();
+					state.loadFrom(previousState);
+					state.setClock(clock);
+					state.catchup();
+				}
+
+				previousState = state;
 			}
-
-			previousState = state;
 		}
+
+		return acceptedEvent;
 	}
 
 
