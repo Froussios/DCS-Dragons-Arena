@@ -1,6 +1,10 @@
 package nl.dcs.da.tss;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 public class Point
+		implements Comparable<Point>
 {
 
 	private final int x, y;
@@ -66,6 +70,45 @@ public class Point
 
 
 	/**
+	 * Gets all the neighbours to this tile. Does not include points that are
+	 * outside the map.
+	 * 
+	 * @return A collection of points for all the neighbours in the battlefield
+	 */
+	public Collection<Point> getNeighbours()
+	{
+		ArrayList<Point> neighbours = new ArrayList<Point>(8);
+
+		neighbours.add(new Point(getX() + 1, getY()));
+		neighbours.add(new Point(getX() - 1, getY()));
+		neighbours.add(new Point(getX(), getY() + 1));
+		neighbours.add(new Point(getX(), getY() - 1));
+		neighbours.add(new Point(getX() + 1, getY() + 1));
+		neighbours.add(new Point(getX() + 1, getY() - 1));
+		neighbours.add(new Point(getX() - 1, getY() + 1));
+		neighbours.add(new Point(getX() - 1, getY() - 1));
+
+		ArrayList<Point> killset = new ArrayList<Point>(8);
+		for (Point point : neighbours)
+			if (!point.isInsideBattlefield())
+				killset.add(point);
+		for (Point point : killset)
+			neighbours.remove(point);
+
+		return neighbours;
+	}
+
+
+	/**
+	 * Returns true if the point represents a valid point inside the battlefield
+	 */
+	protected boolean isInsideBattlefield()
+	{
+		return x >= 0 && x < 25 && y >= 0 && y < 25;
+	}
+
+
+	/**
 	 * Two points are equal if all of their coordinates are the same
 	 */
 	@Override
@@ -78,6 +121,24 @@ public class Point
 		}
 		else
 			return false;
+	}
+
+
+	@Override
+	public int compareTo(Point other)
+	{
+		int comparison = Integer.compare(this.getX(), other.getX());
+		if (comparison == 0)
+			return Integer.compare(this.getY(), other.getY());
+		else
+			return comparison;
+	}
+
+
+	@Override
+	public int hashCode()
+	{
+		return getX() + 25 * getY();
 	}
 
 

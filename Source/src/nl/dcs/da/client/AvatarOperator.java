@@ -9,7 +9,7 @@ import nl.dcs.da.tss.events.Heal;
 import nl.dcs.da.tss.events.PlayerMove;
 
 
-public class Client
+public class AvatarOperator
 {
 
 	private final long me;
@@ -26,7 +26,7 @@ public class Client
 	 * @param id The id of the client's avatar.
 	 * @param game The game this client is playing on.
 	 */
-	public Client(long id, TSS game)
+	public AvatarOperator(long id, TSS game)
 	{
 		this.me = id;
 		this.game = game;

@@ -1,6 +1,7 @@
 package nl.dcs.da.tss;
 
 
+
 /**
  * The battlefield
  * 
@@ -20,7 +21,7 @@ public interface Battlefield
 	public static interface Listener
 	{
 
-		public void onStateChanged();
+		public void onStateChanged(Object cause);
 	}
 
 

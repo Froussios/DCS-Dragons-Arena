@@ -1,12 +1,13 @@
 package nl.dcs.da.tss;
 
-import nl.dcs.da.tss.util.IncGenerator;
+import java.util.Random;
 
 
 public abstract class Actor
 {
 
-	private static IncGenerator idGenerator = new IncGenerator();
+	// private static IncGenerator idGenerator = new IncGenerator();
+	private static Random random = new Random();
 
 	private long id;
 	private final int startingHP;
@@ -61,17 +62,37 @@ public abstract class Actor
 
 
 	/**
-	 * Create a new dragon
+	 * Create a new actor
 	 * 
-	 * @param hp The dragon's health points
-	 * @param ap The dragon's attack points
+	 * @param hp The actor's health points
+	 * @param ap The actor's attack points
 	 */
-	protected Actor(int hp, int ap)
+	protected Actor(int hp, int ap, long id)
 	{
-		this.id = idGenerator.next();
+		// this.id = idGenerator.next();
+		this.id = id;
 
 		this.startingHP = this.hp = hp;
 		this.ap = ap;
+	}
+
+
+	/**
+	 * Create a new actor with HP and HP uniformly random in the specified
+	 * ranges.
+	 * 
+	 * @param minHP
+	 * @param maxHP
+	 * @param minAP
+	 * @param maxAP
+	 */
+	protected Actor(int minHP, int maxHP, int minAP, int maxAP, long id)
+	{
+		// this.id = idGenerator.next();
+		this.id = id;
+
+		this.startingHP = this.hp = random.nextInt(maxHP - minHP) + minHP;
+		this.ap = random.nextInt(maxAP - minAP) + minAP;
 	}
 
 

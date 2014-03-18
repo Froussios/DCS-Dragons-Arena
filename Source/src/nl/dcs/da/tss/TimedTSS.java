@@ -1,5 +1,7 @@
 package nl.dcs.da.tss;
 
+import nl.dcs.da.tss.events.Event;
+import nl.dcs.da.tss.events.StartGame;
 import nl.dcs.da.tss.util.Alarm;
 import nl.dcs.da.tss.util.Alarm.AlarmRunningException;
 
@@ -33,7 +35,29 @@ public class TimedTSS
 
 		this.alarm = updater;
 		this.alarm.subscribe(this);
-		this.alarm.start();
+	}
+
+
+	@Override
+	public synchronized boolean receiveEvent(Event event) throws OutOfSyncException
+	{
+		// TODO This will start the clocks event if the event is not valid.
+
+		if (event instanceof StartGame)
+		{
+			// TODO start clocks
+			try
+			{
+				this.alarm.start();
+			}
+			catch (AlarmRunningException e)
+			{
+				throw new IllegalStateException("Received StartGame event after the clock has started", e);
+			}
+		}
+
+		// Consume event
+		return super.receiveEvent(event);
 	}
 
 

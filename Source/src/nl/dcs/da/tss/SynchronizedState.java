@@ -71,7 +71,7 @@ public class SynchronizedState
 	public synchronized void catchup()
 	{
 		for (Event event : events.getEvents(lastCatchup, clock))
-			this.consume(event);
+			this.consumeAny(event);
 
 		this.lastCatchup = this.clock;
 	}

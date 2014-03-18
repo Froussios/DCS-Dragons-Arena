@@ -6,7 +6,7 @@ import java.util.Scanner;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import nl.dcs.da.client.Client;
+import nl.dcs.da.client.AvatarOperator;
 import nl.dcs.da.tss.Actor;
 import nl.dcs.da.tss.Battlefield;
 import nl.dcs.da.tss.Dragon;
@@ -18,21 +18,26 @@ import nl.dcs.da.tss.State;
 import nl.dcs.da.tss.SynchronizedState;
 import nl.dcs.da.tss.TimedTSS;
 import nl.dcs.da.tss.events.ActorAttack;
+import nl.dcs.da.tss.events.Connect;
 import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.events.Heal;
 import nl.dcs.da.tss.events.MarkEvent;
+import nl.dcs.da.tss.events.OpenGame;
 import nl.dcs.da.tss.events.PlayerMove;
+import nl.dcs.da.tss.events.StartGame;
 import nl.dcs.da.tss.util.Alarm;
 import nl.dcs.da.tss.util.Alarm.AlarmRunningException;
+import nl.dcs.da.tss.util.IncGenerator;
 
 public class Main
 		implements Battlefield.Listener
 {
 
+	private final IncGenerator idGenerator = new IncGenerator();
 	private final EventQueue events = new EventQueue();
 	private TimedTSS state;
 	private static final Scanner scanner = new Scanner(System.in);
-	Client me;
+	AvatarOperator me;
 
 
 	/**
@@ -49,12 +54,12 @@ public class Main
 	public void run() throws AlarmRunningException
 	{
 		State start = new State();
-		start.addListener(this);
-		start.set(new Point(10, 10), new Player(20, 5));
-		start.set(new Point(10, 11), new Player(20, 5));
-		start.set(new Point(11, 11), new Dragon(50, 10));
+		// start.set(new Point(10, 10), new Player(20, 5, idGenerator.next()));
+		// start.set(new Point(10, 11), new Player(20, 5, idGenerator.next()));
+		// start.set(new Point(11, 11), new Dragon(50, 10, idGenerator.next()));
 		state = new TimedTSS(start, 30000, new Alarm(100));
-		me = new Client(2, state);
+		state.addListener(this);
+		me = new AvatarOperator(2, state);
 
 		System.out.println(state);
 
@@ -72,15 +77,22 @@ public class Main
 				{
 					case "exit":
 					case "stop":
+					{
 						System.out.println("Bye");
 						return;
+					}
 					case "test":
+					{
 						test();
 						break;
+					}
 					case "map":
+					{
 						System.out.println(state);
 						break;
+					}
 					case "print":
+					{
 						x = scanner.nextInt();
 						y = scanner.nextInt();
 						e = state.get(new Point(x, y));
@@ -89,17 +101,45 @@ public class Main
 						else
 							System.out.println("null");
 						break;
+					}
 					case "player":
+					{
 						x = scanner.nextInt();
 						y = scanner.nextInt();
-						state.set(new Point(x, y), new Player(20, 5));
+						Player player = new Player(idGenerator.next());
+						Connect connect = new Connect(player.getID(), player, new Point(x, y));
+						feedEvent(connect);
 						break;
+					}
 					case "dragon":
+					{
 						x = scanner.nextInt();
 						y = scanner.nextInt();
-						state.set(new Point(x, y), new Dragon(50, 10));
+						Dragon dragon = new Dragon(idGenerator.next());
+						Connect connect = new Connect(dragon.getID(), dragon, new Point(x, y));
+						feedEvent(connect);
 						break;
+					}
+					case "open":
+					{
+						OpenGame openGame = new OpenGame();
+						feedEvent(openGame);
+						Player p1 = new Player(20, 5, idGenerator.next());
+						feedEvent(new Connect(p1.getID(), p1, new Point(10, 10)));
+						Player p2 = new Player(20, 5, idGenerator.next());
+						feedEvent(new Connect(p2.getID(), p2, new Point(10, 11)));
+						Dragon d1 = new Dragon(50, 10, idGenerator.next());
+						feedEvent(new Connect(d1.getID(), d1, new Point(11, 11)));
+						break;
+					}
+					case "start":
+					{
+						StartGame startGame = new StartGame();
+						feedEvent(startGame);
+						break;
+					}
 					case "move":
+					{
 						time = scanner.nextLong();
 						id = scanner.nextInt();
 						x = scanner.nextInt();
@@ -107,12 +147,16 @@ public class Main
 						PlayerMove move = new PlayerMove(time, id, new Point(x, y));
 						feedEvent(move);
 						break;
+					}
 					case "pmove":
+					{
 						x = scanner.nextInt();
 						y = scanner.nextInt();
 						me.Move(new Point(x, y));
 						break;
+					}
 					case "attack":
+					{
 						time = scanner.nextLong();
 						id = scanner.nextInt();
 						x = scanner.nextInt();
@@ -120,32 +164,45 @@ public class Main
 						ActorAttack attack = new ActorAttack(time, id, new Point(x, y));
 						feedEvent(attack);
 						break;
+					}
 					case "heal":
+					{
 						time = scanner.nextLong();
 						id = scanner.nextInt();
 						long idt = scanner.nextInt();
 						Heal heal = new Heal(time, id, idt);
 						feedEvent(heal);
 						break;
+					}
 					case "history":
+					{
 						for (String message : state.snapshot().getHistory())
 							System.out.println(" - " + message);
 						break;
+					}
 					case "ff":
+					{
 						long timespan = scanner.nextLong();
 						state.incrementTime(timespan);
 						break;
+					}
 					case "clocks":
+					{
 						for (SynchronizedState st : state.getStates())
 							System.out.println(st.getClock());
 						break;
+					}
 					case "events":
+					{
 						for (Event event : state.getEventQueue())
 							System.out.println(event);
 						break;
+					}
 					default:
+					{
 						System.out.println("Learn to type");
 						break;
+					}
 				}
 			}
 		}
@@ -180,15 +237,15 @@ public class Main
 		}
 		catch (OutOfSyncException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
 
 	@Override
-	public void onStateChanged()
+	public void onStateChanged(Object cause)
 	{
-		System.out.println(state);
+		// System.out.println(state);
+		System.out.println("MAP HAS CHANGED: cause: " + cause);
 	}
 }
