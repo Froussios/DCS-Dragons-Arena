@@ -16,41 +16,44 @@ import nl.dcs.da.tss.Player;
 import nl.dcs.da.tss.Point;
 import nl.dcs.da.tss.State;
 import nl.dcs.da.tss.SynchronizedState;
-import nl.dcs.da.tss.TSS;
+import nl.dcs.da.tss.TimedTSS;
 import nl.dcs.da.tss.events.ActorAttack;
 import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.events.Heal;
 import nl.dcs.da.tss.events.MarkEvent;
 import nl.dcs.da.tss.events.PlayerMove;
+import nl.dcs.da.tss.util.Alarm;
+import nl.dcs.da.tss.util.Alarm.AlarmRunningException;
 
 public class Main
 		implements Battlefield.Listener
 {
 
 	private final EventQueue events = new EventQueue();
-	private TSS state;
+	private TimedTSS state;
 	private static final Scanner scanner = new Scanner(System.in);
 	Client me;
 
 
 	/**
 	 * @param args
+	 * @throws Exception
 	 */
-	public static void main(String[] args)
+	public static void main(String[] args) throws Exception
 	{
 		Main m = new Main();
 		m.run();
 	}
 
 
-	public void run()
+	public void run() throws AlarmRunningException
 	{
 		State start = new State();
 		start.addListener(this);
 		start.set(new Point(10, 10), new Player(20, 5));
 		start.set(new Point(10, 11), new Player(20, 5));
 		start.set(new Point(11, 11), new Dragon(50, 10));
-		state = new TSS(start, 30);
+		state = new TimedTSS(start, 30000, new Alarm(100));
 		me = new Client(2, state);
 
 		System.out.println(state);

@@ -37,7 +37,7 @@ public class TSS
 	 * 
 	 * @return
 	 */
-	public Iterable<Event> getEventQueue()
+	public synchronized Iterable<Event> getEventQueue()
 	{
 		return this.events;
 	}
@@ -56,8 +56,10 @@ public class TSS
 
 		// Create trail of states
 		long delay = 1;
-		while (delay <= maxDelay)
+		do
 		{
+			delay *= 2;
+
 			SynchronizedState state = new SynchronizedState(0 - delay, events);
 			state.loadFrom(start);
 			states.add(state);
@@ -65,9 +67,7 @@ public class TSS
 			inSync.add(true);
 
 			System.out.println("Created state@" + state.getClock());
-
-			delay *= 2;
-		}
+		} while (delay <= maxDelay);
 	}
 
 
@@ -100,7 +100,9 @@ public class TSS
 						// There is no previous state to recover from
 						throw new OutOfSyncException("Last state @" + state.getClock() + " is out of sync.");
 
-					System.out.println("State @" + state.getClock() + " is out of sync. Recovering from @" + previousState.getClock());
+					// System.out.println("State @" + state.getClock() +
+					// " is out of sync. Recovering from @" +
+					// previousState.getClock());
 
 					// Recover from previous state
 					long clock = state.getClock();
