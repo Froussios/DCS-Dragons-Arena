@@ -2,12 +2,12 @@ package nl.dcs.da;
 
 import nl.dcs.da.tss.*;
 import nl.dcs.da.tss.events.*;
-import nl.dcs.server.ServerInterface;
+import nl.dcs.network.client.ClientInterface;
+import nl.dcs.network.server.ServerInterface;
 
 import java.io.Serializable;
 import java.rmi.AccessException;
 import java.rmi.NotBoundException;
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class Main extends UnicastRemoteObject implements Battlefield.Listener, ClientInterface, Serializable {
+public class Main implements Battlefield.Listener, Serializable {
 
     private final EventQueue events = new EventQueue();
     private TSS state;
@@ -29,11 +29,8 @@ public class Main extends UnicastRemoteObject implements Battlefield.Listener, C
 
         try {
             Main m = new Main();
-            m.connect();
             m.run();
         } catch (RemoteException e) {
-            e.printStackTrace();
-        } catch (NotBoundException e) {
             e.printStackTrace();
         }
 
@@ -70,8 +67,7 @@ public class Main extends UnicastRemoteObject implements Battlefield.Listener, C
                 switch (command) {
                     case "exit":
                     case "stop":
-                        
-                       this.disconnect();
+
                         System.out.println("Bye");
                         return;
                     case "test":
@@ -147,7 +143,7 @@ public class Main extends UnicastRemoteObject implements Battlefield.Listener, C
                         break;
                 }
             }
-        } catch (RemoteException | NotBoundException ex) {
+        } catch (Exception ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
             scanner.close();
@@ -176,19 +172,7 @@ public class Main extends UnicastRemoteObject implements Battlefield.Listener, C
         try {
             state.receiveEvent(event);
 
-            if (!sentByServer) {
-                // Sending to the server
-                Registry registry = LocateRegistry.getRegistry("127.0.0.1", Main.port);
-
-                ServerInterface stub;
-                    stub = (ServerInterface) registry.lookup("SERVER");
-                    stub.sendEvent(event, this);
-                    System.out.println(stub);
-                System.out.println("Client: " + event);
-            } else {
-                System.out.println("Server: " + event);
-            }
-        } catch (OutOfSyncException| RemoteException | NotBoundException  ex) {
+        } catch (OutOfSyncException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -198,35 +182,8 @@ public class Main extends UnicastRemoteObject implements Battlefield.Listener, C
         System.out.println(state);
     }
 
-    @Override
-    public void update(Event e) throws RemoteException {
-        System.out.println("YEAH");
-        this.feedEvent(e, true);
-    }
-
-    @Override
-    public void connect() throws RemoteException, AccessException, NotBoundException {
 
 
-
-                Registry registry = LocateRegistry.getRegistry("127.0.0.1", 1099);
-
-                ServerInterface stub;
-                    stub = (ServerInterface) registry.lookup("SERVER");
-                    stub.register(this);
-
-
-    }
-
-    @Override
-    public void disconnect() throws RemoteException , AccessException, NotBoundException {
-         Registry registry = LocateRegistry.getRegistry("127.0.0.1", 1099);
-
-                ServerInterface stub;
-                    stub = (ServerInterface) registry.lookup("SERVER");
-                    stub.unregister(this);
-
-    }
 
 
 
