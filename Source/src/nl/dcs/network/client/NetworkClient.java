@@ -34,22 +34,16 @@ public class NetworkClient extends UnicastRemoteObject implements ClientInterfac
 
     @Override
     public void updateFromDump(long sender, TSS state) throws RemoteException {
-
+        
     }
 
-    public void connect (){
-        try {
+    public void connect () throws RemoteException, NotBoundException{
             Registry registry = LocateRegistry.getRegistry(1099);
-            ServerInterface server = (ServerInterface) registry.lookup("SERVER");
-            this.server = server.register(id, this);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        } catch (NotBoundException e) {
-            e.printStackTrace();
-        }
+            this.server = (ServerInterface) registry.lookup("SERVER");
+            this.server.register(id, this);
     }
 
-    public void disconnect (){
-
+    public void disconnect () throws RemoteException{
+        this.server.unregister(id, this);
     }
 }

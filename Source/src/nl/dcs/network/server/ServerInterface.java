@@ -19,6 +19,6 @@ import java.rmi.RemoteException;
 public interface ServerInterface extends Remote {
     
     public void sendEvent (long sender, Event e) throws RemoteException;
-    public ServerInterface register (long sender, ClientInterface c) throws RemoteException;
+    public void register (long sender, ClientInterface c) throws RemoteException;
     public void unregister (long sender, ClientInterface c) throws RemoteException;
 }

@@ -7,8 +7,7 @@ package nl.dcs.da.tss.events;
  * @author Chris
  * 
  */
-public class MarkEvent
-		extends Event
+public class MarkEvent extends Event
 {
 
 	/**
