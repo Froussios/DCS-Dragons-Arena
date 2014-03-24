@@ -5,3 +5,7 @@
 *.war
 *.ear
 /Source/build/
+/dist/
+/nbproject/
+/out/
+/build/
