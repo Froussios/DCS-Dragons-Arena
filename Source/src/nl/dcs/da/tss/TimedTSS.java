@@ -26,7 +26,7 @@ public class TimedTSS
 	 * @param start The initial state of the game
 	 * @param maxDelay The maximum delay for a late event
 	 */
-	public TimedTSS(State start, long maxDelay, Alarm updater)
+	public TimedTSS(State start, long maxDelay)
 	{
 		super(start, maxDelay);
 

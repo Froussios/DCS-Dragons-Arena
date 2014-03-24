@@ -22,7 +22,6 @@ import nl.dcs.da.tss.events.Heal;
 import nl.dcs.da.tss.events.OpenGame;
 import nl.dcs.da.tss.events.PlayerMove;
 import nl.dcs.da.tss.events.StartGame;
-import nl.dcs.da.tss.util.Alarm;
 import nl.dcs.da.tss.util.Alarm.AlarmRunningException;
 import nl.dcs.da.tss.util.IncGenerator;
 
@@ -51,7 +50,7 @@ public class Main
 
 	public void run() throws AlarmRunningException
 	{
-		state = new TimedTSS(start, maxDelay, new Alarm(100));
+		state = new TimedTSS(start, maxDelay);
 		state.addListener(this);
 		me = new AvatarOperator(2, state);
 
