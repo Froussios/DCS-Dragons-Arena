@@ -6,11 +6,13 @@
 
 package nl.dcs.network.server;
 
+import java.rmi.NotBoundException;
 import nl.dcs.network.client.ClientInterface;
 import nl.dcs.da.tss.events.Event;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.rmi.server.ServerNotActiveException;
 
 /**
  *
@@ -18,7 +20,7 @@ import java.rmi.RemoteException;
  */
 public interface ServerInterface extends Remote {
     
-    public void sendEvent (long sender, Event e) throws RemoteException;
+    public void sendEvent (long sender, Event e) throws RemoteException, NotBoundException, ServerNotActiveException;
     public void register (long sender, ClientInterface c) throws RemoteException;
     public void unregister (long sender, ClientInterface c) throws RemoteException;
 }
