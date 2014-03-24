@@ -61,7 +61,7 @@ public class Event implements Comparable<Event>, Serializable
 	 * breaker. This has the implication that the same issuer can't create
 	 * multiple events at the same time.
 	 * 
-	 * This creates a bias consistently favouring clients with specific ids,
+	 * This creates a bias, consistently favouring clients with specific ids,
 	 * when multiple actions occur at the same time. Some kind of bias is
 	 * necessary, however, as the order has to be deterministic across multiple
 	 * machines and multiple replays of the event sequence.

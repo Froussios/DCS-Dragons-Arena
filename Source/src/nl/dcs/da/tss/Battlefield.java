@@ -1,6 +1,7 @@
 package nl.dcs.da.tss;
 
 
+
 /**
  * The battlefield
  * 
@@ -8,6 +9,7 @@ package nl.dcs.da.tss;
  * 
  */
 public interface Battlefield
+		extends Iterable<Point>
 {
 
 	/**
@@ -20,7 +22,7 @@ public interface Battlefield
 	public static interface Listener
 	{
 
-		public void onStateChanged();
+		public void onStateChanged(Object cause);
 	}
 
 
@@ -41,6 +43,24 @@ public interface Battlefield
 	 * @return The actor at that location. May be null.
 	 */
 	public Actor get(int x, int y);
+
+
+	/**
+	 * Get the contents at location if it is a player, and null otherwise
+	 * 
+	 * @param point The location
+	 * @return
+	 */
+	public Player getAsPlayer(Point point);
+
+
+	/**
+	 * Get the contents at location if it is a dragon, and null otherwise.
+	 * 
+	 * @param point The location
+	 * @return
+	 */
+	public Dragon getAsDragon(Point point);
 
 
 	/**

@@ -1,9 +1,14 @@
 package nl.dcs.da.tss;
 
+import java.util.HashSet;
+import java.util.Iterator;
 import nl.dcs.da.tss.events.ActorAttack;
+import nl.dcs.da.tss.events.Connect;
 import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.events.Heal;
+import nl.dcs.da.tss.events.OpenGame;
 import nl.dcs.da.tss.events.PlayerMove;
+import nl.dcs.da.tss.events.StartGame;
 import nl.dcs.da.tss.util.StateLogger;
 
 import java.util.ArrayList;
@@ -20,12 +25,39 @@ public class State
 		implements Battlefield
 {
 
+	/**
+	 * The different phases of a game
+	 */
+	public enum GameState
+	{
+		Closed, Open, Playing, GameOver
+	}
+
 	public static final int size = 25;
 
 
+	private GameState phase;
 	private final Actor[][] battlefield = new Actor[25][25];
 	private final List<Listener> listeners = new ArrayList<>();
 	private final StateLogger history = new StateLogger();
+
+
+	/**
+	 * Get the progress of this game.
+	 */
+	public synchronized GameState getPhase()
+	{
+		return this.phase;
+	}
+
+
+	/**
+	 * Create a new game in a pre-sign-up state.
+	 */
+	public State()
+	{
+		this.phase = GameState.Closed;
+	}
 
 
 	/**
@@ -33,7 +65,7 @@ public class State
 	 * 
 	 * @param event the event to be consumed
 	 */
-	public synchronized void consume(Event event)
+	public synchronized void consumeAny(Event event)
 	{
 		if (event instanceof PlayerMove)
 		{
@@ -47,9 +79,139 @@ public class State
 		{
 			consume((Heal) event);
 		}
+		else if (event instanceof Connect)
+		{
+			consume((Connect) event);
+		}
+		else if (event instanceof OpenGame)
+		{
+			consume((OpenGame) event);
+		}
+		else if (event instanceof StartGame)
+		{
+			consume((StartGame) event);
+		}
 		else
 		{
-			throw new IllegalArgumentException("Tried to consume unknown event type");
+			throw new IllegalArgumentException("Tried to consume unknown event type: " + event.getClass().getName());
+		}
+	}
+
+
+	/**
+	 * Consume an OpenGame event
+	 * 
+	 * @param openGame
+	 */
+	public synchronized void consume(OpenGame openGame)
+	{
+		// Detect illegal move
+		String ignore = null;
+		// If game not closed
+		if (getPhase() != GameState.Closed)
+			ignore = "game already open";
+
+		if (ignore != null)
+		{
+			// Ignore illegal move
+			history.log("IGNORED:", openGame, ":", ignore);
+		}
+		else
+		{
+			// Execute event
+			this.phase = GameState.Open;
+
+			history.log(openGame);
+		}
+	}
+
+
+	/**
+	 * Consume a Connect event
+	 * 
+	 * @param connect
+	 */
+	public synchronized void consume(Connect connect)
+	{
+		// Detect illegal move
+		String ignore = null;
+		// If game not closed
+		if (getPhase() != GameState.Open)
+			ignore = "game not accepting connections";
+
+		if (ignore != null)
+		{
+			// Ignore illegal move
+			history.log("IGNORED:", connect, ":", ignore);
+		}
+		else
+		{
+			// Position at or next to the selected point
+			Point preferredLocation = connect.getStartingPosition();
+			Actor actor = connect.getActor();
+
+			if (this.get(preferredLocation) == null)
+			{
+				// Position player at their preferred location
+				this.set(preferredLocation, actor);
+			}
+			else
+			{
+				// Deterministically find an available location nearby
+				HashSet<Point> neighbourhood = new HashSet<Point>();
+				neighbourhood.add(preferredLocation);
+				while (true)
+				{
+					// Is there a free spot in the neighbourhood?
+					Point spot = null;
+					for (Point check : neighbourhood)
+						if (this.get(check) == null)
+							spot = check;
+
+					if (spot != null)
+					{
+						// Take this spot
+						this.set(spot, actor);
+					}
+					else
+					{
+						// Expand neighbourhood
+						HashSet<Point> expanded = new HashSet<Point>();
+						for (Point old : neighbourhood)
+							expanded.addAll(old.getNeighbours());
+
+						neighbourhood = expanded;
+					}
+				}
+			}
+
+			history.log(connect);
+
+			// Notify listeners of changes
+			onChanged(connect);
+		}
+	}
+
+
+	public synchronized void consume(StartGame startGame)
+	{
+		// Detect illegal move
+		String ignore = null;
+		// If game not closed
+		if (getPhase() != GameState.Open)
+			ignore = "game not ready to start";
+
+		if (ignore != null)
+		{
+			// Ignore illegal move
+			history.log("IGNORED:", startGame, ":", ignore);
+		}
+		else
+		{
+			// Execute event
+			this.phase = GameState.Playing;
+
+			history.log(startGame);
 		}
 	}
 
@@ -79,6 +241,9 @@ public class State
 		// Commanding wrong player
 		else if (!player.equals(move.getPlayer()))
 			ignore = "not commanding this player";
+		// Game not playing
+		else if (getPhase() != GameState.Playing)
+			ignore = "game not playing";
 		else
 			ignore = null;
 
@@ -96,7 +261,7 @@ public class State
 			history.log(move);
 
 			// Notify listeners of changes
-			onChanged();
+			onChanged(move);
 		}
 	}
 
@@ -110,7 +275,7 @@ public class State
 	{
 		Point current = this.findActor(attack.getAttacker());
 		Point target = attack.getTarget();
-		Actor attacker = this.get(current);
+		Actor attacker = (current != null) ? this.get(current) : null;
 		Actor victim = this.get(target);
 
 		// Detect illegal move
@@ -130,6 +295,9 @@ public class State
 		// Commanding wrong actor
 		else if (!attacker.equals(attack.getAttacker()))
 			ignore = "Commanding wrong actor";
+		// Game not playing
+		else if (getPhase() != GameState.Playing)
+			ignore = "game not playing";
 		else
 			ignore = null;
 
@@ -155,7 +323,7 @@ public class State
 			}
 
 			// Notify listeners
-			onChanged();
+			onChanged(attack);
 		}
 	}
 
@@ -186,6 +354,9 @@ public class State
 		// Healing self
 		else if (healer.equals(target))
 			ignore = "Cannot heal one's self";
+		// Game not playing
+		else if (getPhase() != GameState.Playing)
+			ignore = "game not playing";
 		else
 			ignore = null;
 
@@ -203,7 +374,7 @@ public class State
 			history.log(heal);
 
 			// Notify listeners
-			this.onChanged();
+			this.onChanged(heal);
 		}
 	}
 
@@ -233,6 +404,7 @@ public class State
 	 * @param location
 	 * @return A player instance, or null if none is found
 	 */
+	@Override
 	public synchronized Player getAsPlayer(Point location)
 	{
 		if (location == null)
@@ -252,6 +424,7 @@ public class State
 	 * @param location
 	 * @return A dragon instance, or null if none is found
 	 */
+	@Override
 	public synchronized Dragon getAsDragon(Point location)
 	{
 		if (location == null)
@@ -344,7 +517,7 @@ public class State
 		this.history.clear();
 		this.history.addAll(other.history);
 
-		this.onChanged();
+		this.onChanged("Loaded from previous state");
 	}
 
 
@@ -371,10 +544,10 @@ public class State
 	/**
 	 * Notify all listeners that an action has been executed
 	 */
-	public void onChanged()
+	public void onChanged(Object cause)
 	{
 		for (Listener listener : listeners)
-			listener.onStateChanged();
+			listener.onStateChanged(cause);
 	}
 
 
@@ -395,7 +568,7 @@ public class State
 	@Override
 	public String toString()
 	{
-		String rv = "";
+		String rv = this.getPhase() + "\n";
 		for (int y = 0; y < 25; y++)
 		{
 			for (int x = 0; x < 25; x++)
@@ -411,5 +584,51 @@ public class State
 			rv += "\n";
 		}
 		return rv;
+	}
+
+
+	@Override
+	public Iterator<Point> iterator()
+	{
+		return new State.MapIterator();
+	}
+
+
+	/**
+	 * An iterator that returns every point in the battlefield
+	 * 
+	 * @author Chris
+	 * 
+	 */
+	public static class MapIterator
+			implements Iterator<Point>
+	{
+
+		private Point next = new Point(0, 0);
+
+
+		@Override
+		public boolean hasNext()
+		{
+			return next.isInsideBattlefield();
+		}
+
+
+		@Override
+		public Point next()
+		{
+			Point rv = next;
+			next = next.shift(1, 0);
+			if (!next.isInsideBattlefield())
+				next = new Point(0, next.getY() + 1);
+
+			return rv;
+		}
+
+
+		@Override
+		public void remove()
+		{
+		}
 	}
 }

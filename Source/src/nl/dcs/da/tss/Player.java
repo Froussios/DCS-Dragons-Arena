@@ -17,12 +17,22 @@ public class Player
 	 * @param hp The player's max HP
 	 * @param ap the player's AP
 	 */
-	public Player(int hp, int ap)
+	public Player(int hp, int ap, long id)
 	{
-		super(hp, ap);
+		super(hp, ap, id);
 
 		if (hp < 10 || hp > 20 || ap < 1 || ap > 10)
 			throw new IllegalArgumentException("Invalid AP nad HP values for new player");
+	}
+
+
+	/**
+	 * Create a new player with HP uniformly random in [10,20] and AP uniformly
+	 * random in [1,10]
+	 */
+	public Player(long id)
+	{
+		super(10, 20, 1, 10, id);
 	}
 
 
@@ -41,9 +51,9 @@ public class Player
 	@Override
 	public Player clone()
 	{
-		Player clone = new Player(getMaxHP(), getAP());
+		Player clone = new Player(getMaxHP(), getAP(), getID());
 		clone.setHP(getHP());
-		clone.setID(getID());
+		// clone.setID(getID());
 		return clone;
 	}
 

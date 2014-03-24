@@ -27,9 +27,9 @@ public class TSS
 
 	private final ArrayDeque<SynchronizedState> states = new ArrayDeque<>();
 	private final ArrayList<Long> delays = new ArrayList<>();
-	private final ArrayList<Boolean> inSync = new ArrayList<>();
 
 	private long simulationClock;
+	private final long maxDelay;
 	private final EventQueue events = new EventQueue();
 
 
@@ -38,7 +38,7 @@ public class TSS
 	 * 
 	 * @return
 	 */
-	public Iterable<Event> getEventQueue()
+	public synchronized Iterable<Event> getEventQueue()
 	{
 		return this.events;
 	}
@@ -55,20 +55,22 @@ public class TSS
 		if (maxDelay <= 0)
 			throw new IllegalArgumentException("Maximum delay cannot be 0");
 
+		this.maxDelay = maxDelay;
+		this.simulationClock = 0;
+
 		// Create trail of states
 		long delay = 1;
-		while (delay <= maxDelay)
+		do
 		{
-			SynchronizedState state = new SynchronizedState(0 - delay, events);
+			delay *= 2;
+
+			SynchronizedState state = new SynchronizedState(this.simulationClock - delay, events);
 			state.loadFrom(start);
 			states.add(state);
 			delays.add(delay);
-			inSync.add(true);
 
 			System.out.println("Created state@" + state.getClock());
-
-			delay *= 2;
-		}
+		} while (delay <= maxDelay);
 	}
 
 
@@ -79,37 +81,40 @@ public class TSS
 	 * @param event The event
 	 * @throws OutOfSyncException
 	 */
-	public synchronized void receiveEvent(Event event) throws OutOfSyncException
+	public synchronized boolean receiveEvent(Event event) throws OutOfSyncException
 	{
 		// Add event to history
-		events.add(event);
+		boolean acceptedEvent = events.add(event);
 
-		// Reset states as needed
-		SynchronizedState previousState = null;
-		Iterator<SynchronizedState> reverseIterator = states.descendingIterator();
-		while (reverseIterator.hasNext())
+		if (acceptedEvent)
 		{
-			SynchronizedState state = reverseIterator.next();
-
-			if (state.getClock() > event.getSimulationTime())
+			// Reset states as needed
+			SynchronizedState previousState = null;
+			Iterator<SynchronizedState> reverseIterator = states.descendingIterator();
+			while (reverseIterator.hasNext())
 			{
-				// State is out of sync. Recover from previous state
+				SynchronizedState state = reverseIterator.next();
 
-				if (previousState == null)
-					// There is no previous state to recover from
-					throw new OutOfSyncException("Last state @" + state.getClock() + " is out of sync.");
+				if (state.getClock() > event.getSimulationTime())
+				{
+					// State is out of sync. Recover from previous state
 
-				System.out.println("State @" + state.getClock() + " is out of sync. Recovering from @" + previousState.getClock());
+					if (previousState == null)
+						// There is no previous state to recover from
+						throw new OutOfSyncException("Last state @" + state.getClock() + " is out of sync.");
 
-				// Recover from previous state
-				long clock = state.getClock();
-				state.loadFrom(previousState);
-				state.setClock(clock);
-				state.catchup();
+					// Recover from previous state
+					long clock = state.getClock();
+					state.loadFrom(previousState);
+					state.setClock(clock);
+					state.catchup();
+				}
+
+				previousState = state;
 			}
-
-			previousState = state;
 		}
+
+		return acceptedEvent;
 	}
 
 
@@ -144,12 +149,12 @@ public class TSS
 
 
 	/**
-	 * DEBUGGING ONLY
+	 * <b>DEBUGGING ONLY</b>
 	 * 
 	 * @param point
 	 * @param value
 	 */
-	public synchronized void set(Point point, Actor value)
+	synchronized void set(Point point, Actor value)
 	{
 		for (State state : states)
 			state.set(point, value.clone());
@@ -178,6 +183,28 @@ public class TSS
 
 
 	/**
+	 * Gets the contents of the leading state at a specific point if it is a
+	 * player, and null otherwise.
+	 */
+	@Override
+	public synchronized Player getAsPlayer(Point point)
+	{
+		return this.getLeadingState().getAsPlayer(point);
+	}
+
+
+	/**
+	 * Gets the contents of the leading state at a specific point if it is a
+	 * dragon, and null otherwise.
+	 */
+	@Override
+	public synchronized Dragon getAsDragon(Point point)
+	{
+		return this.getLeadingState().getAsDragon(point);
+	}
+
+
+	/**
 	 * Get the contents of the leading state at a specific point.
 	 */
 	@Override
@@ -198,12 +225,50 @@ public class TSS
 
 
 	/**
+	 * Get the phase of the leading state.
+	 * 
+	 * @return
+	 */
+	public synchronized State.GameState getPhase()
+	{
+		return getLeadingState().getPhase();
+	}
+
+
+	/**
 	 * Add a listener for changes in the leading state.
 	 */
 	@Override
 	public synchronized void addListener(Listener listener)
 	{
 		getLeadingState().addListener(listener);
+	}
+
+
+	/**
+	 * Copy another <code>TSS</code> instance into this one.
+	 * 
+	 * @param other The <code>TSS</code> instance to copy from.
+	 */
+	public synchronized void loadFrom(TSS other)
+	{
+		// Copy events
+		this.events.clear();
+		this.events.addAll(other.getEventQueue());
+
+		// this.maxDelay = other.maxDelay;
+		this.simulationClock = other.simulationClock;
+
+		// Copy states
+		Iterator<SynchronizedState> thisIter = this.states.iterator();
+		Iterator<SynchronizedState> otherIter = other.states.iterator();
+		while (thisIter.hasNext())
+		{
+			SynchronizedState thisState = thisIter.next();
+			SynchronizedState otherState = otherIter.next();
+
+			thisState.loadFrom(otherState);
+		}
 	}
 
 
@@ -248,6 +313,16 @@ public class TSS
 	public String toString()
 	{
 		return getLeadingState().toString();
+	}
+
+
+	/**
+	 * Get an iterator that returns every point inside the battlefield
+	 */
+	@Override
+	public Iterator<Point> iterator()
+	{
+		return this.getLeadingState().iterator();
 	}
 
 }
