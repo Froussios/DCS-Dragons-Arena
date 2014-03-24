@@ -25,15 +25,12 @@ public class TimedTSS
 	 * 
 	 * @param start The initial state of the game
 	 * @param maxDelay The maximum delay for a late event
-	 * @param updater The alarm that defines time for this instance.
-	 * @throws AlarmRunningException The alarm supplied must not be already in
-	 *             use
 	 */
-	public TimedTSS(State start, long maxDelay, Alarm updater) throws AlarmRunningException
+	public TimedTSS(State start, long maxDelay, Alarm updater)
 	{
 		super(start, maxDelay);
 
-		this.alarm = updater;
+		this.alarm = new Alarm(50);
 		this.alarm.subscribe(this);
 	}
 
