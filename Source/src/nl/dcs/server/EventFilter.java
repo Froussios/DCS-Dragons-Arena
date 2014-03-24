@@ -41,7 +41,7 @@ public class EventFilter
 	 * @param event The event to be filtered
 	 * @return true if the event can be accepted
 	 */
-	public boolean AcceptEventFromClient(Event event)
+	public boolean acceptEventFromClient(Event event)
 	{
 		boolean accepted = true;
 
@@ -83,7 +83,7 @@ public class EventFilter
 	 * @param event
 	 * @return true, if the event can be accepted
 	 */
-	public boolean AcceptEventFromServer(Event event)
+	public boolean acceptEventFromServer(Event event)
 	{
 		boolean ok = true;
 
