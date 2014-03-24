@@ -26,7 +26,7 @@ public class PlayerAI
 
 
 	@Override
-	protected void makeMove()
+	protected void makeMove() throws CharacterDeadException
 	{
 		Point position = this.getLocation();
 
@@ -39,7 +39,7 @@ public class PlayerAI
 			{
 				if (player.getMaxHP() > player.getHP() * 2)
 				{
-					this.Heal(player.getID());
+					this.heal(player.getID());
 					return;
 				}
 			}
@@ -52,7 +52,7 @@ public class PlayerAI
 			Dragon dragon = this.getBattlefield().getAsDragon(point);
 			if (dragon != null)
 			{
-				this.Attack(point);
+				this.attack(point);
 				return;
 			}
 		}
@@ -66,13 +66,13 @@ public class PlayerAI
 				if (this.getBattlefield().getAsDragon(target) != null)
 				{
 					if (position.getX() > target.getX())
-						this.Move(position.shift(-1, 0));
+						this.move(position.shift(-1, 0));
 					else if (position.getX() < target.getX())
-						this.Move(position.shift(+1, 0));
+						this.move(position.shift(+1, 0));
 					else if (position.getY() > target.getY())
-						this.Move(position.shift(0, -1));
+						this.move(position.shift(0, -1));
 					else if (position.getY() < target.getY())
-						this.Move(position.shift(0, +1));
+						this.move(position.shift(0, +1));
 					return;
 				}
 			}

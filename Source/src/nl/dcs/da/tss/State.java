@@ -2,6 +2,7 @@ package nl.dcs.da.tss;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 
 import nl.dcs.da.tss.events.ActorAttack;
@@ -274,7 +275,7 @@ public class State
 	{
 		Point current = this.findActor(attack.getAttacker());
 		Point target = attack.getTarget();
-		Actor attacker = this.get(current);
+		Actor attacker = (current != null) ? this.get(current) : null;
 		Actor victim = this.get(target);
 
 		// Detect illegal move
@@ -403,6 +404,7 @@ public class State
 	 * @param location
 	 * @return A player instance, or null if none is found
 	 */
+	@Override
 	public synchronized Player getAsPlayer(Point location)
 	{
 		if (location == null)
@@ -422,6 +424,7 @@ public class State
 	 * @param location
 	 * @return A dragon instance, or null if none is found
 	 */
+	@Override
 	public synchronized Dragon getAsDragon(Point location)
 	{
 		if (location == null)
@@ -581,5 +584,51 @@ public class State
 			rv += "\n";
 		}
 		return rv;
+	}
+
+
+	@Override
+	public Iterator<Point> iterator()
+	{
+		return new State.MapIterator();
+	}
+
+
+	/**
+	 * An iterator that returns every point in the battlefield
+	 * 
+	 * @author Chris
+	 * 
+	 */
+	public static class MapIterator
+			implements Iterator<Point>
+	{
+
+		private Point next = new Point(0, 0);
+
+
+		@Override
+		public boolean hasNext()
+		{
+			return next.isInsideBattlefield();
+		}
+
+
+		@Override
+		public Point next()
+		{
+			Point rv = next;
+			next = next.shift(1, 0);
+			if (!next.isInsideBattlefield())
+				next = new Point(0, next.getY() + 1);
+
+			return rv;
+		}
+
+
+		@Override
+		public void remove()
+		{
+		}
 	}
 }

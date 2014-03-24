@@ -57,11 +57,25 @@ public class AvatarOperator
 
 
 	/**
+	 * Throw an exception if the character is no longer alive.
+	 * 
+	 * @throws CharacterDeadException
+	 */
+	protected void enforceAlive() throws CharacterDeadException
+	{
+		if (this.inGame())
+			throw new AvatarOperator.CharacterDeadException("Character " + this.getID() + " is dead.");
+	}
+
+
+	/**
 	 * Move to a new location.
 	 * 
 	 * @param target The new location.
+	 * @throws
+	 * @throws CharacterDeadException
 	 */
-	public void Move(Point target)
+	public void move(Point target) throws CharacterDeadException
 	{
 		PlayerMove move = new PlayerMove(game.getSimulationTime(), me, target);
 		submitEvent(move);
@@ -72,8 +86,10 @@ public class AvatarOperator
 	 * Strike at a location on the map
 	 * 
 	 * @param target
+	 * @throws
+	 * @throws CharacterDeadException
 	 */
-	public void Attack(Point target)
+	public void attack(Point target) throws CharacterDeadException
 	{
 		ActorAttack attack = new ActorAttack(game.getSimulationTime(), me, target);
 		submitEvent(attack);
@@ -84,8 +100,10 @@ public class AvatarOperator
 	 * Heal another player
 	 * 
 	 * @param who The other player's id
+	 * @throws
+	 * @throws CharacterDeadException
 	 */
-	public void Heal(long who)
+	public void heal(long who) throws CharacterDeadException
 	{
 		Heal heal = new Heal(game.getSimulationTime(), me, who);
 		submitEvent(heal);
@@ -96,6 +114,7 @@ public class AvatarOperator
 	 * Get this client's location on the battlefield
 	 * 
 	 * @return
+	 * @throws CharacterDeadException
 	 */
 	public Point getLocation()
 	{
@@ -108,6 +127,7 @@ public class AvatarOperator
 	 * Get whether this client has a playing avatar in the game.
 	 * 
 	 * @return true if the player can still act in the game
+	 * @throws CharacterDeadException
 	 */
 	public boolean inGame()
 	{
@@ -119,24 +139,62 @@ public class AvatarOperator
 	 * Submit a new event to the game
 	 * 
 	 * @param event
+	 * @throws CharacterDeadException
 	 */
-	protected void submitEvent(Event event) throws IllegalStateException
+	protected void submitEvent(Event event) throws IllegalStateException, CharacterDeadException
 	{
-		if (!inGame())
-			throw new IllegalStateException("Client not in game");
-
-		try
+		synchronized (this.game)
 		{
-			boolean accepted = game.receiveEvent(event);
-			if (!accepted)
+			if (!inGame())
+				throw new CharacterDeadException();
+
+			try
 			{
-				// TODO Notify too soon since previous action
+				boolean accepted = game.receiveEvent(event);
+				if (!accepted)
+				{
+					// TODO Notify too soon since previous action
+				}
+			}
+			catch (OutOfSyncException e)
+			{
+				throw new IllegalStateException("Event at simulation time caused the game to go out-of-sync.");
 			}
 		}
-		catch (OutOfSyncException e)
+	}
+
+
+	/**
+	 * An exception that is thrown when an action is attempted after the
+	 * character has died.
+	 * 
+	 * @author Chris
+	 * 
+	 */
+	public static class CharacterDeadException
+			extends Exception
+	{
+
+		private static final long serialVersionUID = 98727438463185411L;
+
+
+		public CharacterDeadException(String message, Throwable inner)
 		{
-			throw new IllegalStateException("Event at simulation time caused the game to go out-of-sync.");
+			super(message, inner);
 		}
+
+
+		public CharacterDeadException(String message)
+		{
+			super(message, null);
+		}
+
+
+		public CharacterDeadException()
+		{
+			super("Character is dead");
+		}
+
 	}
 
 }

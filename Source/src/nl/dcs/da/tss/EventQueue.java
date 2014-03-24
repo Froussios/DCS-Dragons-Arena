@@ -1,6 +1,7 @@
 package nl.dcs.da.tss;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -27,13 +28,39 @@ public class EventQueue
 
 
 	/**
+	 * Add all the events into the queue.
+	 * 
+	 * @param events
+	 */
+	public synchronized boolean addAll(Collection<Event> events)
+	{
+		return this.events.addAll(events);
+	}
+
+
+	/**
+	 * Add all the events into the queue.
+	 * 
+	 * @param events The events to be added.
+	 * @return
+	 */
+	public synchronized boolean addAll(Iterable<Event> events)
+	{
+		ArrayList<Event> e = new ArrayList<Event>();
+		for (Event event : events)
+			e.add(event);
+		return this.events.addAll(e);
+	}
+
+
+	/**
 	 * Gets all the events inside a a range of time
 	 * 
 	 * @param since The oldest event, inclusive
 	 * @param until The most recent event, exclusive
 	 * @return The events, from older to recent
 	 */
-	public synchronized Iterable<Event> getEvents(long since, long until)
+	public synchronized Collection<Event> getEvents(long since, long until)
 	{
 		Event sinceE = new MarkEvent(since);
 		Event untilE = new MarkEvent(until);
@@ -51,6 +78,15 @@ public class EventQueue
 		Event mark = new MarkEvent(before);
 		ArrayList<Event> killset = new ArrayList<Event>(events.headSet(mark));
 		events.removeAll(killset);
+	}
+
+
+	/**
+	 * Remove every event from this queue.
+	 */
+	public synchronized void clear()
+	{
+		this.events.clear();
 	}
 
 

@@ -105,7 +105,7 @@ public class Point
 	 * Get all the points that are at most <code>distance</code> tiles away from
 	 * this one.
 	 * 
-	 * @param distance
+	 * @param distance The maximum distance
 	 * @return
 	 */
 	public Collection<Point> getNeighbours(int distance)

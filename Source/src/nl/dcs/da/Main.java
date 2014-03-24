@@ -1,10 +1,6 @@
 package nl.dcs.da;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Scanner;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 import nl.dcs.da.client.AvatarOperator;
 import nl.dcs.da.client.DragonAI;
@@ -17,12 +13,12 @@ import nl.dcs.da.tss.Player;
 import nl.dcs.da.tss.Point;
 import nl.dcs.da.tss.State;
 import nl.dcs.da.tss.SynchronizedState;
+import nl.dcs.da.tss.TSS;
 import nl.dcs.da.tss.TimedTSS;
 import nl.dcs.da.tss.events.ActorAttack;
 import nl.dcs.da.tss.events.Connect;
 import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.events.Heal;
-import nl.dcs.da.tss.events.MarkEvent;
 import nl.dcs.da.tss.events.OpenGame;
 import nl.dcs.da.tss.events.PlayerMove;
 import nl.dcs.da.tss.events.StartGame;
@@ -34,9 +30,11 @@ public class Main
 		implements Battlefield.Listener
 {
 
+	private static final Scanner scanner = new Scanner(System.in);
+	private static final State start = new State();
+	private static final long maxDelay = 30000;
 	private final IncGenerator idGenerator = new IncGenerator();
 	private TimedTSS state;
-	private static final Scanner scanner = new Scanner(System.in);
 	AvatarOperator me;
 
 
@@ -53,11 +51,7 @@ public class Main
 
 	public void run() throws AlarmRunningException
 	{
-		State start = new State();
-		// start.set(new Point(10, 10), new Player(20, 5, idGenerator.next()));
-		// start.set(new Point(10, 11), new Player(20, 5, idGenerator.next()));
-		// start.set(new Point(11, 11), new Dragon(50, 10, idGenerator.next()));
-		state = new TimedTSS(start, 30000, new Alarm(100));
+		state = new TimedTSS(start, maxDelay, new Alarm(100));
 		state.addListener(this);
 		me = new AvatarOperator(2, state);
 
@@ -128,6 +122,8 @@ public class Main
 						feedEvent(new Connect(p1.getID(), p1, new Point(10, 10)));
 						Player p2 = new Player(20, 5, idGenerator.next());
 						feedEvent(new Connect(p2.getID(), p2, new Point(10, 11)));
+						Player p3 = new Player(20, 5, idGenerator.next());
+						feedEvent(new Connect(p3.getID(), p3, new Point(0, 0)));
 						Dragon d1 = new Dragon(50, 10, idGenerator.next());
 						feedEvent(new Connect(d1.getID(), d1, new Point(11, 11)));
 						break;
@@ -152,7 +148,7 @@ public class Main
 					{
 						x = scanner.nextInt();
 						y = scanner.nextInt();
-						me.Move(new Point(x, y));
+						me.move(new Point(x, y));
 						break;
 					}
 					case "attack":
@@ -212,6 +208,29 @@ public class Main
 						dragon.start();
 						break;
 					}
+					case "myminions":
+					{
+						State s = state.snapshot();
+						for (Point point : s)
+						{
+							Player player = s.getAsPlayer(point);
+							if (player != null)
+							{
+								PlayerAI pai = new PlayerAI(player.getID(), state, 5000);
+								pai.start();
+								System.out.println("Automanted player " + player.getID());
+							}
+
+							Dragon dragon = s.getAsDragon(point);
+							if (dragon != null)
+							{
+								DragonAI dai = new DragonAI(dragon.getID(), state, 5000);
+								dai.start();
+								System.out.println("Automanted dragon " + dragon.getID());
+							}
+						}
+						break;
+					}
 					default:
 					{
 						System.out.println("Learn to type");
@@ -220,6 +239,10 @@ public class Main
 				}
 			}
 		}
+		catch (Exception any)
+		{
+			any.printStackTrace();
+		}
 		finally
 		{
 			scanner.close();
@@ -227,18 +250,11 @@ public class Main
 	}
 
 
-	private static void test()
+	private void test()
 	{
-		SortedSet<Event> ss = new TreeSet<Event>();
-		ss.add(new Heal(10, 0, 0));
-		ss.add(new PlayerMove(15, 0, new Point(0, 0)));
-		ss.add(new Heal(20, 0, 0));
-
-		Collection<Event> killset = new ArrayList<Event>(ss.headSet(new MarkEvent(16)));
-		ss.removeAll(killset);
-
-		for (Event e : ss)
-			System.out.println(e);
+		TSS tt = new TSS(start, maxDelay);
+		tt.loadFrom(this.state);
+		this.state.loadFrom(tt);
 	}
 
 

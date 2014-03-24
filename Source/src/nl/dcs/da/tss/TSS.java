@@ -26,7 +26,6 @@ public class TSS
 
 	private final ArrayDeque<SynchronizedState> states = new ArrayDeque<SynchronizedState>();
 	private final ArrayList<Long> delays = new ArrayList<Long>();
-	private final ArrayList<Boolean> inSync = new ArrayList<Boolean>();
 
 	private long simulationClock;
 	private final long maxDelay;
@@ -54,7 +53,9 @@ public class TSS
 	{
 		if (maxDelay <= 0)
 			throw new IllegalArgumentException("Maximum delay cannot be 0");
+
 		this.maxDelay = maxDelay;
+		this.simulationClock = 0;
 
 		// Create trail of states
 		long delay = 1;
@@ -62,11 +63,10 @@ public class TSS
 		{
 			delay *= 2;
 
-			SynchronizedState state = new SynchronizedState(0 - delay, events);
+			SynchronizedState state = new SynchronizedState(this.simulationClock - delay, events);
 			state.loadFrom(start);
 			states.add(state);
 			delays.add(delay);
-			inSync.add(true);
 
 			System.out.println("Created state@" + state.getClock());
 		} while (delay <= maxDelay);
@@ -101,10 +101,6 @@ public class TSS
 					if (previousState == null)
 						// There is no previous state to recover from
 						throw new OutOfSyncException("Last state @" + state.getClock() + " is out of sync.");
-
-					// System.out.println("State @" + state.getClock() +
-					// " is out of sync. Recovering from @" +
-					// previousState.getClock());
 
 					// Recover from previous state
 					long clock = state.getClock();
@@ -152,12 +148,12 @@ public class TSS
 
 
 	/**
-	 * DEBUGGING ONLY
+	 * <b>DEBUGGING ONLY</b>
 	 * 
 	 * @param point
 	 * @param value
 	 */
-	public synchronized void set(Point point, Actor value)
+	synchronized void set(Point point, Actor value)
 	{
 		for (State state : states)
 			state.set(point, value.clone());
@@ -249,6 +245,33 @@ public class TSS
 
 
 	/**
+	 * Copy another <code>TSS</code> instance into this one.
+	 * 
+	 * @param other The <code>TSS</code> instance to copy from.
+	 */
+	public synchronized void loadFrom(TSS other)
+	{
+		// Copy events
+		this.events.clear();
+		this.events.addAll(other.getEventQueue());
+
+		// this.maxDelay = other.maxDelay;
+		this.simulationClock = other.simulationClock;
+
+		// Copy states
+		Iterator<SynchronizedState> thisIter = this.states.iterator();
+		Iterator<SynchronizedState> otherIter = other.states.iterator();
+		while (thisIter.hasNext())
+		{
+			SynchronizedState thisState = thisIter.next();
+			SynchronizedState otherState = otherIter.next();
+
+			thisState.loadFrom(otherState);
+		}
+	}
+
+
+	/**
 	 * Get a snapshot of the leading state
 	 */
 	@Override
@@ -289,6 +312,16 @@ public class TSS
 	public String toString()
 	{
 		return getLeadingState().toString();
+	}
+
+
+	/**
+	 * Get an iterator that returns every point inside the battlefield
+	 */
+	@Override
+	public Iterator<Point> iterator()
+	{
+		return this.getLeadingState().iterator();
 	}
 
 }

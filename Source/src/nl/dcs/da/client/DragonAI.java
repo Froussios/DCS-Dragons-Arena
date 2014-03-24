@@ -31,9 +31,12 @@ public class DragonAI
 
 
 	@Override
-	protected void makeMove()
+	protected void makeMove() throws CharacterDeadException
 	{
+		// TODO null exception when dead
+
 		Point position = this.getLocation();
+
 		Collection<Point> neighbourhood2 = position.getNeighbours(2);
 
 		// Find a player in range and attack
@@ -43,10 +46,11 @@ public class DragonAI
 
 			if (player != null)
 			{
-				this.Attack(point);
+				this.attack(point);
 				return;
 			}
 		}
+
 	}
 
 }

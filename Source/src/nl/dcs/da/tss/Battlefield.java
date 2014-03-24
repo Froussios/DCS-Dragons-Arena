@@ -9,6 +9,7 @@ package nl.dcs.da.tss;
  * 
  */
 public interface Battlefield
+		extends Iterable<Point>
 {
 
 	/**

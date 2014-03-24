@@ -36,7 +36,7 @@ public abstract class TimedAvatarOperator
 
 
 	/**
-	 * Start perfroming actions
+	 * Start performing actions
 	 * 
 	 * @throws AlarmRunningException
 	 */
@@ -49,13 +49,25 @@ public abstract class TimedAvatarOperator
 	/**
 	 * Perform the next move
 	 */
-	protected abstract void makeMove();
+	protected abstract void makeMove() throws CharacterDeadException;
 
 
 	@Override
 	public void update(long interval)
 	{
-		makeMove();
-	}
 
+		try
+		{
+			if (this.inGame())
+				makeMove();
+			else
+				throw new CharacterDeadException();
+		}
+		catch (CharacterDeadException e)
+		{
+			// TODO stop trying after a given amount of time.
+			System.err.println("Character " + getID() + " tried to act while dead.");
+		}
+
+	}
 }
