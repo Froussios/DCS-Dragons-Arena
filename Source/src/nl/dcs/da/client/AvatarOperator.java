@@ -1,5 +1,6 @@
 package nl.dcs.da.client;
 
+import nl.dcs.da.tss.Battlefield;
 import nl.dcs.da.tss.OutOfSyncException;
 import nl.dcs.da.tss.Point;
 import nl.dcs.da.tss.TSS;
@@ -14,6 +15,28 @@ public class AvatarOperator
 
 	private final long me;
 	private final TSS game;
+
+
+	/**
+	 * Get the id of the player being controlled
+	 * 
+	 * @return
+	 */
+	public long getID()
+	{
+		return me;
+	}
+
+
+	/**
+	 * Returns the battlefield this character is playing on
+	 * 
+	 * @return
+	 */
+	protected Battlefield getBattlefield()
+	{
+		return this.game;
+	}
 
 
 	// TODO track if player is alive
@@ -84,7 +107,7 @@ public class AvatarOperator
 	/**
 	 * Get whether this client has a playing avatar in the game.
 	 * 
-	 * @return true if the palyer can still act in the game
+	 * @return true if the player can still act in the game
 	 */
 	public boolean inGame()
 	{

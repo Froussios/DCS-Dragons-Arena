@@ -2,6 +2,8 @@ package nl.dcs.da.tss;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Point
 		implements Comparable<Point>
@@ -83,10 +85,10 @@ public class Point
 		neighbours.add(new Point(getX() - 1, getY()));
 		neighbours.add(new Point(getX(), getY() + 1));
 		neighbours.add(new Point(getX(), getY() - 1));
-		neighbours.add(new Point(getX() + 1, getY() + 1));
-		neighbours.add(new Point(getX() + 1, getY() - 1));
-		neighbours.add(new Point(getX() - 1, getY() + 1));
-		neighbours.add(new Point(getX() - 1, getY() - 1));
+		// neighbours.add(new Point(getX() + 1, getY() + 1));
+		// neighbours.add(new Point(getX() + 1, getY() - 1));
+		// neighbours.add(new Point(getX() - 1, getY() + 1));
+		// neighbours.add(new Point(getX() - 1, getY() - 1));
 
 		ArrayList<Point> killset = new ArrayList<Point>(8);
 		for (Point point : neighbours)
@@ -96,6 +98,49 @@ public class Point
 			neighbours.remove(point);
 
 		return neighbours;
+	}
+
+
+	/**
+	 * Get all the points that are at most <code>distance</code> tiles away from
+	 * this one.
+	 * 
+	 * @param distance
+	 * @return
+	 */
+	public Collection<Point> getNeighbours(int distance)
+	{
+		Set<Point> neighbourhood = new HashSet<Point>();
+		neighbourhood.add(this);
+		for (int i = 0; i < distance; i++)
+		{
+			Set<Point> n = new HashSet<Point>();
+			for (Point point : neighbourhood)
+				n.addAll(point.getNeighbours());
+			neighbourhood = n;
+
+			ArrayList<Point> killset = new ArrayList<Point>(8);
+			for (Point point : neighbourhood)
+				if (!point.isInsideBattlefield())
+					killset.add(point);
+			for (Point point : killset)
+				neighbourhood.remove(point);
+		}
+
+		return new ArrayList<Point>(neighbourhood);
+	}
+
+
+	/**
+	 * Returns a new point that is shifted in relation to this.
+	 * 
+	 * @param x The shift on the x axis
+	 * @param y the shift on the y axis
+	 * @return The shifted point
+	 */
+	public Point shift(int x, int y)
+	{
+		return new Point(this.getX() + x, this.getY() + y);
 	}
 
 

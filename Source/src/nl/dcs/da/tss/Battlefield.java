@@ -45,6 +45,24 @@ public interface Battlefield
 
 
 	/**
+	 * Get the contents at location if it is a player, and null otherwise
+	 * 
+	 * @param point The location
+	 * @return
+	 */
+	public Player getAsPlayer(Point point);
+
+
+	/**
+	 * Get the contents at location if it is a dragon, and null otherwise.
+	 * 
+	 * @param point The location
+	 * @return
+	 */
+	public Dragon getAsDragon(Point point);
+
+
+	/**
 	 * The location of an actor
 	 * 
 	 * @param id The actor's id

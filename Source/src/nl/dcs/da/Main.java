@@ -7,10 +7,11 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import nl.dcs.da.client.AvatarOperator;
+import nl.dcs.da.client.DragonAI;
+import nl.dcs.da.client.PlayerAI;
 import nl.dcs.da.tss.Actor;
 import nl.dcs.da.tss.Battlefield;
 import nl.dcs.da.tss.Dragon;
-import nl.dcs.da.tss.EventQueue;
 import nl.dcs.da.tss.OutOfSyncException;
 import nl.dcs.da.tss.Player;
 import nl.dcs.da.tss.Point;
@@ -34,7 +35,6 @@ public class Main
 {
 
 	private final IncGenerator idGenerator = new IncGenerator();
-	private final EventQueue events = new EventQueue();
 	private TimedTSS state;
 	private static final Scanner scanner = new Scanner(System.in);
 	AvatarOperator me;
@@ -196,6 +196,20 @@ public class Main
 					{
 						for (Event event : state.getEventQueue())
 							System.out.println(event);
+						break;
+					}
+					case "autoplayer":
+					{
+						long playerid = scanner.nextLong();
+						PlayerAI player = new PlayerAI(playerid, state, 5000);
+						player.start();
+						break;
+					}
+					case "autodragon":
+					{
+						long dragonid = scanner.nextLong();
+						DragonAI dragon = new DragonAI(dragonid, state, 5000);
+						dragon.start();
 						break;
 					}
 					default:

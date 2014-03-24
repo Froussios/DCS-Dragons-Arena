@@ -29,6 +29,7 @@ public class TSS
 	private final ArrayList<Boolean> inSync = new ArrayList<Boolean>();
 
 	private long simulationClock;
+	private final long maxDelay;
 	private final EventQueue events = new EventQueue();
 
 
@@ -53,6 +54,7 @@ public class TSS
 	{
 		if (maxDelay <= 0)
 			throw new IllegalArgumentException("Maximum delay cannot be 0");
+		this.maxDelay = maxDelay;
 
 		// Create trail of states
 		long delay = 1;
@@ -184,6 +186,28 @@ public class TSS
 
 
 	/**
+	 * Gets the contents of the leading state at a specific point if it is a
+	 * player, and null otherwise.
+	 */
+	@Override
+	public synchronized Player getAsPlayer(Point point)
+	{
+		return this.getLeadingState().getAsPlayer(point);
+	}
+
+
+	/**
+	 * Gets the contents of the leading state at a specific point if it is a
+	 * dragon, and null otherwise.
+	 */
+	@Override
+	public synchronized Dragon getAsDragon(Point point)
+	{
+		return this.getLeadingState().getAsDragon(point);
+	}
+
+
+	/**
 	 * Get the contents of the leading state at a specific point.
 	 */
 	@Override
@@ -200,6 +224,17 @@ public class TSS
 	public synchronized Point findActor(long id)
 	{
 		return getLeadingState().findActor(id);
+	}
+
+
+	/**
+	 * Get the phase of the leading state.
+	 * 
+	 * @return
+	 */
+	public synchronized State.GameState getPhase()
+	{
+		return getLeadingState().getPhase();
 	}
 
 

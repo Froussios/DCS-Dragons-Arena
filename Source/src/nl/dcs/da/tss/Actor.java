@@ -33,6 +33,12 @@ public abstract class Actor
 	}
 
 
+	public int getMaxHP()
+	{
+		return this.startingHP;
+	}
+
+
 	/**
 	 * Set the actor's health points. The new HP will be automatically capped by
 	 * the maximum HP of this actor
@@ -46,12 +52,6 @@ public abstract class Actor
 		if (this.hp > this.startingHP)
 			this.hp = this.startingHP;
 		return this.hp;
-	}
-
-
-	protected int getMaxHP()
-	{
-		return this.startingHP;
 	}
 
 

@@ -41,11 +41,9 @@ public class TimedTSS
 	@Override
 	public synchronized boolean receiveEvent(Event event) throws OutOfSyncException
 	{
-		// TODO This will start the clocks event if the event is not valid.
-
+		// Start clocks
 		if (event instanceof StartGame)
 		{
-			// TODO start clocks
 			try
 			{
 				this.alarm.start();

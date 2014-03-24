@@ -5,7 +5,7 @@ import nl.dcs.da.tss.events.Event;
 
 /**
  * A extension of State, that also stores a clock and automatically consumes
- * event that are due.
+ * events that are due.
  * 
  * @author Chris
  * 
