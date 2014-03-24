@@ -2,6 +2,8 @@ package nl.dcs.da.tss;
 
 import nl.dcs.da.tss.events.Event;
 
+import java.io.Serializable;
+
 
 /**
  * A extension of State, that also stores a clock and automatically consumes
@@ -12,7 +14,7 @@ import nl.dcs.da.tss.events.Event;
  */
 public class SynchronizedState
 		extends State
-		implements Battlefield
+		implements Battlefield, Serializable
 {
 
 	private long clock = Long.MIN_VALUE;

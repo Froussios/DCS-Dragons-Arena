@@ -1,5 +1,6 @@
 package nl.dcs.da.tss;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -10,12 +11,13 @@ public class Point
 {
 
 	private final int x, y;
+    private static final long serialVersionUID = 6181684382275406670L;
 
 
 	/**
 	 * Get the X coordinate
 	 * 
-	 * @return
+	 * @return the X coordinate
 	 */
 	public int getX()
 	{

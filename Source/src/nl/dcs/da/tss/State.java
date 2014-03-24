@@ -1,10 +1,7 @@
 package nl.dcs.da.tss;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-
 import nl.dcs.da.tss.events.ActorAttack;
 import nl.dcs.da.tss.events.Connect;
 import nl.dcs.da.tss.events.Event;
@@ -13,6 +10,9 @@ import nl.dcs.da.tss.events.OpenGame;
 import nl.dcs.da.tss.events.PlayerMove;
 import nl.dcs.da.tss.events.StartGame;
 import nl.dcs.da.tss.util.StateLogger;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -38,7 +38,7 @@ public class State
 
 	private GameState phase;
 	private final Actor[][] battlefield = new Actor[25][25];
-	private final List<Listener> listeners = new ArrayList<Listener>();
+	private final List<Listener> listeners = new ArrayList<>();
 	private final StateLogger history = new StateLogger();
 
 
@@ -311,7 +311,7 @@ public class State
 		{
 			// Deliver damage
 			int ap = attacker.getAP();
-			victim.receiveDamage(ap);
+                    int receiveDamage = victim.receiveDamage(ap);
 
 			history.log(attack);
 

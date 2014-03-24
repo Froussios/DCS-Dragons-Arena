@@ -1,10 +1,11 @@
 package nl.dcs.da.tss;
 
+import nl.dcs.da.tss.events.Event;
+
+import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
-
-import nl.dcs.da.tss.events.Event;
 
 /**
  * An implementation of the Trailing State synchronisation algorithm. The
@@ -21,11 +22,11 @@ import nl.dcs.da.tss.events.Event;
  * 
  */
 public class TSS
-		implements Battlefield
+		implements Battlefield, Serializable
 {
 
-	private final ArrayDeque<SynchronizedState> states = new ArrayDeque<SynchronizedState>();
-	private final ArrayList<Long> delays = new ArrayList<Long>();
+	private final ArrayDeque<SynchronizedState> states = new ArrayDeque<>();
+	private final ArrayList<Long> delays = new ArrayList<>();
 
 	private long simulationClock;
 	private final long maxDelay;

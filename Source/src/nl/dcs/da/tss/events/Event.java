@@ -1,18 +1,14 @@
 package nl.dcs.da.tss.events;
 
+import java.io.Serializable;
 
-/**
- * A user-submitted action (player or AI) can change the state of a game
- * 
- * @author Chris
- * 
- */
-public class Event
-		implements Comparable<Event>
+
+public class Event implements Comparable<Event>, Serializable
 {
 
 	private long time = -1;
 	private long issuer = -1;
+    private static final long serialVersionUID = -8808638004008501988L;
 
 
 	/**
