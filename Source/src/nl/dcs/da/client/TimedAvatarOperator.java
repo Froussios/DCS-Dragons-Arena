@@ -18,6 +18,8 @@ public abstract class TimedAvatarOperator
 {
 
 	private final Alarm alarm;
+	private int strikes = 0;
+	private static final int maxStrikes = 2;
 
 
 	/**
@@ -55,18 +57,26 @@ public abstract class TimedAvatarOperator
 	@Override
 	public void update(long interval)
 	{
-
+		// TODO stop strying at gameover
+		
 		try
 		{
 			if (this.inGame())
+			{
 				makeMove();
+				strikes = 0;
+			}
 			else
 				throw new CharacterDeadException();
 		}
 		catch (CharacterDeadException e)
 		{
-			// TODO stop trying after a given amount of time.
-			System.err.println("Character " + getID() + " tried to act while dead.");
+			// Stop trying after a given amount of time.
+			this.strikes++;
+			if (this.strikes >= maxStrikes)
+				this.alarm.stop();
+			
+			System.err.println("Character " + getID() + " tried to act while dead. Strike " + this.strikes);
 		}
 
 	}
