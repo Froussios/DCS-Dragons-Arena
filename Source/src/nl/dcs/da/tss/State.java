@@ -1,7 +1,10 @@
 package nl.dcs.da.tss;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+
 import nl.dcs.da.tss.events.ActorAttack;
 import nl.dcs.da.tss.events.Connect;
 import nl.dcs.da.tss.events.Event;
@@ -10,9 +13,6 @@ import nl.dcs.da.tss.events.OpenGame;
 import nl.dcs.da.tss.events.PlayerMove;
 import nl.dcs.da.tss.events.StartGame;
 import nl.dcs.da.tss.util.StateLogger;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**
@@ -229,8 +229,8 @@ public class State
 
 		// Detect illegal move
 		String ignore = null;
-		// Player not in game
-		if (current == null)
+		// Player not in game; Actor is not a player
+		if (player == null)
 			ignore = "player not on battlefield";
 		// Too far to jump to
 		else if (!current.adjacent(target))
@@ -311,7 +311,7 @@ public class State
 		{
 			// Deliver damage
 			int ap = attacker.getAP();
-                    int receiveDamage = victim.receiveDamage(ap);
+			int receiveDamage = victim.receiveDamage(ap);
 
 			history.log(attack);
 
