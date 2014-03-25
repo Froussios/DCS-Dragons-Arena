@@ -321,6 +321,10 @@ public class State
 				this.set(target, null);
 				history.log(victim, "died");
 			}
+			
+			// Check if all the dragons are dead
+			if ( this.detectGameover() )
+				this.phase = GameState.GameOver;
 
 			// Notify listeners
 			onChanged(attack);
@@ -472,6 +476,25 @@ public class State
 	{
 		return this.battlefield[x][y];
 	}
+	
+	
+	/**
+	 * Checks if the game is over.
+	 * The game is over when there are no more dragons left.
+	 * Does not check if the game phase is up to date.
+	 * 
+	 * @return true, if the game is over.
+	 */
+	protected synchronized boolean detectGameover()
+	{
+		for (Point point : this)
+		{
+			Dragon dragon = this.getAsDragon(point);
+			if (dragon != null)
+				return false;
+		}
+		return true;
+	}
 
 
 	/**
@@ -491,6 +514,7 @@ public class State
 				clone.set(point, value);
 			}
 		clone.history.addAll(this.history);
+		clone.phase = this.phase;
 		return clone;
 	}
 
@@ -516,6 +540,8 @@ public class State
 		// Copy logs
 		this.history.clear();
 		this.history.addAll(other.history);
+		
+		this.phase = other.phase;
 
 		this.onChanged("Loaded from previous state");
 	}
