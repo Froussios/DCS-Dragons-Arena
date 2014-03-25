@@ -122,6 +122,8 @@ public class State
 			this.phase = GameState.Open;
 
 			history.log(openGame);
+
+			this.onChanged(openGame);
 		}
 	}
 
@@ -212,6 +214,8 @@ public class State
 			this.phase = GameState.Playing;
 
 			history.log(startGame);
+
+			this.onChanged(startGame);
 		}
 	}
 
