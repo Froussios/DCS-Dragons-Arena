@@ -39,6 +39,17 @@ public class AvatarOperator
 	}
 
 
+	/**
+	 * Get the game this character is playing on.
+	 * 
+	 * @return
+	 */
+	protected TSS getGame()
+	{
+		return this.game;
+	}
+
+
 	// TODO track if player is alive
 
 	/**

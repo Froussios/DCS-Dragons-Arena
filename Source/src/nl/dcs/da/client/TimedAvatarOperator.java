@@ -1,5 +1,6 @@
 package nl.dcs.da.client;
 
+import nl.dcs.da.tss.State.GameState;
 import nl.dcs.da.tss.TSS;
 import nl.dcs.da.tss.util.Alarm;
 import nl.dcs.da.tss.util.Alarm.AlarmRunningException;
@@ -58,10 +59,14 @@ public abstract class TimedAvatarOperator
 
 		try
 		{
-			if (this.inGame())
-				makeMove();
-			else
-				throw new CharacterDeadException();
+			// Make a move if the player is alive and the game is playing
+			if (this.getGame().getPhase().equals(GameState.Playing))
+			{
+				if (this.inGame())
+					makeMove();
+				else
+					throw new CharacterDeadException();
+			}
 		}
 		catch (CharacterDeadException e)
 		{
