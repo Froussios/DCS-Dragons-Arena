@@ -19,6 +19,8 @@ public abstract class TimedAvatarOperator
 {
 
 	private final Alarm alarm;
+	private long failtime = 0;
+	private static final long maxFailtime = 2;
 
 
 	/**
@@ -53,12 +55,17 @@ public abstract class TimedAvatarOperator
 	protected abstract void makeMove() throws CharacterDeadException;
 
 
+	/**
+	 * The function that will be executed asynchronously. 
+	 */
 	@Override
 	public void update(long interval)
 	{
-
+		// TODO stop trying at gameover
+		
 		try
 		{
+<<<<<<< HEAD
 			// Make a move if the player is alive and the game is playing
 			if (this.getGame().getPhase().equals(GameState.Playing))
 			{
@@ -67,11 +74,24 @@ public abstract class TimedAvatarOperator
 				else
 					throw new CharacterDeadException();
 			}
+=======
+			if (this.inGame())
+			{
+				makeMove();
+				this.failtime = 0;
+			}
+			else
+				throw new CharacterDeadException();
+>>>>>>> 803a1b9681f68a47c897fa2cd7b6a6125414199b
 		}
 		catch (CharacterDeadException e)
 		{
-			// TODO stop trying after a given amount of time.
-			System.err.println("Character " + getID() + " tried to act while dead.");
+			// Stop trying after it is no longer possible for the game to be revised into the player being alive.
+			this.failtime += interval;
+			if (this.failtime >= maxFailtime)
+				this.alarm.stop();
+			
+			System.err.println("Character " + getID() + " tried to act while dead. Failtime " + this.failtime);
 		}
 
 	}

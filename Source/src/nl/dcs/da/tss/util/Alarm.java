@@ -34,6 +34,7 @@ public class Alarm
 	private Listener listener;
 	private boolean running = false;
 	private final long scale;
+	private Thread thread = null;
 
 
 	/**
@@ -81,9 +82,9 @@ public class Alarm
 	 */
 	public synchronized void start() throws AlarmRunningException
 	{
-		if (!this.running)
+		if (!this.running && this.thread == null)
 		{
-			Thread thread = new Thread(this);
+			this.thread = new Thread(this);
 			this.lastfire = System.currentTimeMillis();
 			this.running = true;
 			thread.start();
@@ -93,8 +94,37 @@ public class Alarm
 			throw new AlarmRunningException();
 		}
 	}
+	
+	
+	/**
+	 * The next and all subsequent fires are cancelled, unless the Alarm is restarted.
+	 */
+	public synchronized void stop()
+	{
+		running = false;
+	}
 
 
+	@Override
+	public void run()
+	{
+		while (running)
+		{
+			// Sleep for at least minInterval time
+			try
+			{
+				Thread.sleep(minInterval * scale);
+			}
+			catch (InterruptedException e)
+			{
+			}
+
+			// Fire clock
+			onFire();
+		}
+	}
+	
+	
 	/**
 	 * The alarm fires
 	 */
@@ -115,26 +145,7 @@ public class Alarm
 			l.update((lastfire - t) / scale);
 		}
 	}
-
-
-	@Override
-	public void run()
-	{
-		while (true)
-		{
-			// Sleep for at least minInterval time
-			try
-			{
-				Thread.sleep(minInterval * scale);
-			}
-			catch (InterruptedException e)
-			{
-			}
-
-			// Fire clock
-			onFire();
-		}
-	}
+	
 
 	/**
 	 * This exception is thrown when operations are attempted on a running

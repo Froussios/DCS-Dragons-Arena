@@ -1,5 +1,6 @@
 package nl.dcs.network.client;
 
+import java.net.MalformedURLException;
 import nl.dcs.da.tss.TSS;
 import nl.dcs.da.tss.events.Event;
 import nl.dcs.network.server.ServerInterface;
@@ -33,26 +34,25 @@ public class ClientNetwork extends NetworkRessource implements ClientInterface {
     }
 
     @Override
-    public void update(long sender, Event e) throws RemoteException {
+    public void update(Event e) throws RemoteException {
 
     }
 
     @Override
-    public void updateFromDump(long sender, TSS state) throws RemoteException {
+    public void updateFromDump(TSS state) throws RemoteException {
         
     }
 
-    public void connect (String name) throws RemoteException, NotBoundException{
-            Registry registry = LocateRegistry.getRegistry(DNS.getServer(name).getPort());
-            this.server = (ServerInterface) registry.lookup("SERVER");
-            this.server.register(id, this);
+    public void connect (int i) throws RemoteException, NotBoundException, MalformedURLException{
+            this.server = (ServerInterface) DNS.lookup(i);
+            this.state = this.server.register(id, this);
     }
 
     public void disconnect () throws RemoteException{
         this.server.unregister(id, this);
     }
     
-    public void sendEvent (Event e) throws RemoteException, NotBoundException, ServerNotActiveException{
+    public void sendEvent (Event e) throws RemoteException, NotBoundException, ServerNotActiveException, MalformedURLException{
         this.server.sendEvent(id, e);
     }
 }
