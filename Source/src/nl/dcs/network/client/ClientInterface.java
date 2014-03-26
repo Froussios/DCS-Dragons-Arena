@@ -19,6 +19,6 @@ import java.rmi.RemoteException;
  */
 public interface ClientInterface extends Remote{
     
-    public void update (long sender, Event e) throws RemoteException;
-    public void updateFromDump(long sender,TSS state) throws RemoteException;
+    public void update (Event e) throws RemoteException;
+    public void updateFromDump(TSS state) throws RemoteException;
 }
