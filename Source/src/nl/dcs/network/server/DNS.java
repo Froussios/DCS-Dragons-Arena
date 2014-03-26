@@ -5,11 +5,14 @@
  */
 package nl.dcs.network.server;
 
+import java.net.MalformedURLException;
+import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,37 +36,35 @@ public class DNS {
         return DNS.instance;
     }
 
-    public static Server getServer(String name) {
-        return getInstance().mapping.get(name);
+    public static String getServerAddress(int i) {
+        return getInstance().addresses.get(i);
     }
 
-    public static Set<String> getServersNames() {
-        return getInstance().mapping.keySet();
-    }
-
-    public static ServerInterface find(Server s) throws RemoteException, NotBoundException {
-        Registry r = LocateRegistry.getRegistry(s.getPort());
-        return (ServerInterface) r.lookup(s.getName());
-    }
-
-    private final HashMap<String, Server> mapping;
-
+    private final List<String> addresses;
+    
     private DNS() {
         super();
-        mapping = new HashMap<>();
-        try {
-            mapping.put("ALPHA", new Server(1L, "ALPHA", 1099, new String[]{}));
-            mapping.put("BETA", new Server(2L, "BETA", 1100, new String[]{}));
-            mapping.put("EPSILON", new Server(3L, "EPSLION", 1101, new String[]{}));
-            mapping.put("GAMMA", new Server(4L, "GAMMA", 1102, new String[]{}));
-            mapping.put("ZETA", new Server(5L, "ZETA", 1103, new String[]{}));
-        } catch (RemoteException ex) {
-            Logger.getLogger(DNS.class.getName()).log(Level.SEVERE, null, ex);
-        }
+            addresses = new ArrayList<>();
+            addresses.add("rmi://localhost:1099/");
+            addresses.add("rmi://localhost:1100/");
+            addresses.add("rmi://localhost:1101/");
+            addresses.add("rmi://localhost:1102/");
+            addresses.add("rmi://localhost:1103/");
     }
 
-    public static ServerInterface find(String s) throws RemoteException, NotBoundException {
-        return DNS.find(DNS.getServer(s));
+    public static ServerInterface lookup(int i) throws RemoteException, NotBoundException, MalformedURLException{
+        
+        return (ServerInterface) Naming.lookup(getServerAddress(i) + "SERVER");
+        
     }
-
+    
+    
+    
+    
+    public static int getNbServers (){
+        return getInstance().addresses.size();
+    }
+    
+    
+    
 }
