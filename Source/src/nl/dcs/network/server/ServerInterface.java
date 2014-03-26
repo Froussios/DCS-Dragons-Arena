@@ -14,6 +14,7 @@ import nl.dcs.da.tss.events.Event;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.ServerNotActiveException;
+import nl.dcs.da.tss.OutOfSyncException;
 import nl.dcs.da.tss.TSS;
 
 /**
@@ -22,8 +23,8 @@ import nl.dcs.da.tss.TSS;
  */
 public interface ServerInterface extends Remote {
     
-    void sendEvent (long sender, Event e) throws RemoteException, NotBoundException, ServerNotActiveException,MalformedURLException;
-    void transferEvent (Event e) throws RemoteException, NotBoundException, ServerNotActiveException,MalformedURLException;
+    void sendEvent (long sender, Event e) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException;
+    void transferEvent (Event e) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException;
     public TSS register (long sender, ClientInterface c) throws RemoteException;
     public void unregister (long sender, ClientInterface c) throws RemoteException;
 }
