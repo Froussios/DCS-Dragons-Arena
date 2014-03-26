@@ -10,10 +10,7 @@ import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -52,9 +49,13 @@ public class DNS {
             addresses.add("rmi://localhost:1103/");
     }
 
-    public static ServerInterface lookup(int i) throws RemoteException, NotBoundException, MalformedURLException{
-        
-        return (ServerInterface) Naming.lookup(getServerAddress(i) + "SERVER");
+    public static ServerInterface lookup(int i) throws RemoteException, NotBoundException{
+        try {
+            return (ServerInterface) Naming.lookup(getServerAddress(i) + "SERVER");
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(DNS.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
         
     }
     
