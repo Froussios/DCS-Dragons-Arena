@@ -15,14 +15,24 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
  * @author Ivanis
  */
 public class DNS {
 
     private static volatile DNS instance;
+    private final List<String> addresses;
 
-    public static final DNS getInstance() {
+    private DNS() {
+        super();
+        addresses = new ArrayList<>();
+        addresses.add("rmi://localhost:1099/");
+        addresses.add("rmi://localhost:1100/");
+        addresses.add("rmi://localhost:1101/");
+        addresses.add("rmi://localhost:1102/");
+        addresses.add("rmi://localhost:1103/");
+    }
+
+    private static final DNS getInstance() {
         if (DNS.instance == null) {
             synchronized (DNS.class) {
                 if (DNS.instance == null) {
@@ -33,39 +43,31 @@ public class DNS {
         return DNS.instance;
     }
 
-    public static String getServerAddress(int i) {
+    public static String getServerAddress(int i) throws IllegalArgumentException {
+        if (i < 0 || i > getInstance().addresses.size()) throw new IllegalArgumentException("Unknown server");
         return getInstance().addresses.get(i);
     }
 
-    private final List<String> addresses;
-    
-    private DNS() {
-        super();
-            addresses = new ArrayList<>();
-            addresses.add("rmi://localhost:1099/");
-            addresses.add("rmi://localhost:1100/");
-            addresses.add("rmi://localhost:1101/");
-            addresses.add("rmi://localhost:1102/");
-            addresses.add("rmi://localhost:1103/");
-    }
-
-    public static ServerInterface lookup(int i) throws RemoteException, NotBoundException{
+    public static ServerInterface lookup(int i) throws RemoteException, NotBoundException {
         try {
             return (ServerInterface) Naming.lookup(getServerAddress(i) + "SERVER");
         } catch (MalformedURLException ex) {
             Logger.getLogger(DNS.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
-        
     }
-    
-    
-    
-    
-    public static int getNbServers (){
+
+
+    public static int getNbServers() {
         return getInstance().addresses.size();
     }
-    
-    
-    
+
+    public static void addServer(String address) {
+
+    }
+
+    public static void addServer(String address, int index) {
+    }
+
+
 }
