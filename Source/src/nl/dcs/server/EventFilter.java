@@ -24,7 +24,7 @@ public class EventFilter
 
 	/**
 	 * Create a new server-side filter
-	 * 
+	 *
 	 * @param context The live game to check against
 	 */
 	public EventFilter(TSS context, long client)
@@ -35,9 +35,9 @@ public class EventFilter
 
 
 	/**
-	 * Check if this event should be accepted by the server, when received by a
+	 * Check if this event should be accepted by the server, when received from a
 	 * client.
-	 * 
+	 *
 	 * @param event The event to be filtered
 	 * @return true if the event can be accepted
 	 */
@@ -77,9 +77,9 @@ public class EventFilter
 
 
 	/**
-	 * Check if this event should be accepted by the server, when received by a
+	 * Check if this event should be accepted by the server, when received from a
 	 * server.
-	 * 
+	 *
 	 * @param event
 	 * @return true, if the event can be accepted
 	 */

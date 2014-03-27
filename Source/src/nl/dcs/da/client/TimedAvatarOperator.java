@@ -65,7 +65,6 @@ public abstract class TimedAvatarOperator
 		
 		try
 		{
-<<<<<<< HEAD
 			// Make a move if the player is alive and the game is playing
 			if (this.getGame().getPhase().equals(GameState.Playing))
 			{
@@ -74,15 +73,6 @@ public abstract class TimedAvatarOperator
 				else
 					throw new CharacterDeadException();
 			}
-=======
-			if (this.inGame())
-			{
-				makeMove();
-				this.failtime = 0;
-			}
-			else
-				throw new CharacterDeadException();
->>>>>>> 803a1b9681f68a47c897fa2cd7b6a6125414199b
 		}
 		catch (CharacterDeadException e)
 		{

@@ -1,6 +1,8 @@
 package nl.dcs.da.tss.util;
 
 
+import java.util.logging.Logger;
+
 /**
  * An alarm that fires in specified intervals
  * 
@@ -117,6 +119,7 @@ public class Alarm
 			}
 			catch (InterruptedException e)
 			{
+                Logger.getLogger(this.getClass().toString()).severe(e.getMessage());
 			}
 
 			// Fire clock

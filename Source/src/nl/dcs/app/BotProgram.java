@@ -79,7 +79,7 @@ public class BotProgram
 		// TODO Connect
 		System.out.print("Enter the server : ");
 		String serverName = scanner.next();
-		this.connection.connect(serverName);
+		this.connection.connect(1);
 
 		// TODO Get game
 

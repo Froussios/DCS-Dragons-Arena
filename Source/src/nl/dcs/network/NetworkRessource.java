@@ -11,17 +11,19 @@ import java.rmi.server.UnicastRemoteObject;
 
 /**
  * Class who represent anything in the network
+ *
  * @author Ivanis
  */
-public abstract class NetworkRessource extends UnicastRemoteObject{
+public abstract class NetworkRessource extends UnicastRemoteObject {
     private static final long serialVersionUID = -8851690600231736075L;
-    
-    
+
+
     /**
      * Constructor
-     * @throws RemoteException 
+     *
+     * @throws RemoteException
      */
-    public NetworkRessource () throws RemoteException{
+    public NetworkRessource() throws RemoteException {
         super();
     }
 }
