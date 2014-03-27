@@ -1,88 +1,37 @@
 package nl.dcs.network.server;
 
-import nl.dcs.da.tss.events.Event;
+import nl.dcs.da.tss.OutOfSyncException;
+import nl.dcs.da.tss.State;
+import nl.dcs.da.tss.TSS;
+import nl.dcs.da.tss.TimedTSS;
+import nl.dcs.da.tss.events.*;
+import nl.dcs.network.NetworkRessource;
 import nl.dcs.network.client.ClientInterface;
 import org.apache.commons.collections4.bag.TreeBag;
 
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
-
 import java.rmi.NotBoundException;
-
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-
 import java.rmi.server.ServerNotActiveException;
-import java.util.*;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
+import java.util.Random;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import nl.dcs.da.tss.OutOfSyncException;
-import nl.dcs.da.tss.State;
-import nl.dcs.da.tss.TSS;
-import nl.dcs.da.tss.TimedTSS;
-import nl.dcs.da.tss.events.OpenGame;
-import nl.dcs.da.tss.events.StartGame;
-import nl.dcs.da.tss.util.Alarm;
-import nl.dcs.network.NetworkRessource;
 
 /**
+ * @version 0.1
  * @author Ivanis
  */
 public class Server extends NetworkRessource implements ServerInterface {
 
     private static final long serialVersionUID = 5446617274331655787L;
-
-    /**
-     *
-     * @param args
-     * @throws RemoteException
-     */
-    public static void main(String[] args) {
-        try {
-            if (args.length != 1) {
-                System.exit(1);
-            }
-            System.out.println(new StringBuilder().append("Server start ").append(args[0]).toString());
-            Server server = new Server(Integer.parseInt(args[0]));
-            server.expose();
-
-            Scanner input = new Scanner(System.in);
-            do {
-                System.out.print("> ");
-                String command = input.next().toLowerCase();
-                switch (command) {
-                    case "send":
-                        break;
-                    case "open":
-                        server.open();
-                        break;
-                    case "start":
-                        server.start();
-                        ;
-                        break;
-                    case "terminate":
-                    case "exit":
-                        server.terminate();
-                    default:
-                        System.out.println("Unknown command");
-                }
-            } while (true);
-        } catch (UnknownHostException | MalformedURLException | RemoteException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (OutOfSyncException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (NotBoundException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (ServerNotActiveException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
-    public static void main() {
-        Server.main(new String[]{"1"});
-    }
+    private static final long maxClientDelay = 150000;
 
     private final InetAddress ip;
     private final Integer port;
@@ -92,6 +41,15 @@ public class Server extends NetworkRessource implements ServerInterface {
     private final Integer window;
     private final TSS state;
 
+
+    /**
+     * Constructor
+     * @param id server's identifier
+     * @param ip server's address default to {@link java.net.InetAddress#getLoopbackAddress()}
+     * @param port server"s port default to 1099
+     * @param window number of server to transfert the data upon reception default to 2
+     * @throws RemoteException
+     */
     private Server(int id, InetAddress ip, Integer port, Integer window) throws RemoteException {
 
         super();
@@ -100,40 +58,39 @@ public class Server extends NetworkRessource implements ServerInterface {
         }
         this.ip = ip;
         this.port = port;
-        this.eventBag = new TreeBag();
+        this.eventBag = new TreeBag<Event>();
         this.id = id;
         this.window = window;
         this.clients = new HashMap<>();
         this.state = new TimedTSS(new State(), 50L);
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "Creation of server object : {0}", this.id);
         System.out.println(new StringBuilder().append("Creation of server object : ").append(this.id).toString());
-
     }
 
     private Server(int id, InetAddress ip, Integer port) throws RemoteException {
-
         this(id, ip, port, 2);
-
     }
+
 
     private Server(int id, InetAddress ip) throws RemoteException {
-
         this(id, ip, 1099, 2);
-
     }
 
-    /**
-     *
-     * @param name
-     * @param port
-     * @param broadcast
-     * @throws RemoteException
-     */
     private Server(int id, Integer port) throws RemoteException {
         this(id, InetAddress.getLoopbackAddress(), port);
     }
 
+    /**
+     * Constructor
+     * @param id the identifier in the network
+     * @param address the rmi address of the server
+     * @param window the number of server you should contact
+     * @throws UnknownHostException if the host is not known
+     * @throws RemoteException @see java.rmi.server.UnicastRemoteObject#UnicastRemoteObject()
+     * @throws MalformedURLException if the address is not correct
+     */
     public Server(int id, String address, int window) throws UnknownHostException, RemoteException, MalformedURLException {
+        super();
         this.id = id;
         address = address.replace("rmi:", "");
         if (address.length() - address.replace(":", "").length() != 1) {
@@ -155,6 +112,10 @@ public class Server extends NetworkRessource implements ServerInterface {
         this.clients = new HashMap<>();
         this.eventBag = new TreeBag<>();
         this.window = window;
+
+
+        Logger.getLogger(this.getClass().getName()).log(Level.FINE, "Creation of server object : {0}", this.id);
+        System.out.println(new StringBuilder().append("Creation of server object : ").append(this.id).toString());
     }
 
     public Server(int id) throws UnknownHostException, RemoteException, MalformedURLException {
@@ -166,8 +127,48 @@ public class Server extends NetworkRessource implements ServerInterface {
     }
 
     /**
-     * Expose the server interface to the other netwok ressource using the RMI
-     * registery
+     * Launch the server in wait of event to transfer
+     * @param args Only one is accepted, the id of the server (Bound to change during production)
+     */
+    public static void main(String[] args) {
+        try {
+            if (args.length != 1) {
+                System.exit(1);
+            }
+            System.out.println(new StringBuilder().append("Server start ").append(args[0]).toString());
+            Server server = new Server(Integer.parseInt(args[0]));
+            System.out.println(server);
+            server.expose();
+
+            Scanner input = new Scanner(System.in);
+            while (true) {
+                System.out.print("> ");
+                String command = input.next().toLowerCase();
+                switch (command) {
+                    case "send":
+                        server.transferEvent(new MarkEvent(new Random().nextLong()));
+                        break;
+                    case "open":
+                        server.transferEvent(new OpenGame());
+                        break;
+                    case "start":
+                        server.transferEvent(new StartGame());
+                        break;
+                    case "terminate":
+                    case "exit":
+                        server.terminate();
+                    default:
+                        System.out.println("Unknown command");
+                }
+            }
+        } catch (UnknownHostException | MalformedURLException | RemoteException | OutOfSyncException | NotBoundException | ServerNotActiveException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    /**
+     * Expose the server interface to the other network resources using the RMI
+     * registry
      *
      * @throws RemoteException
      */
@@ -175,10 +176,11 @@ public class Server extends NetworkRessource implements ServerInterface {
         Registry registry = LocateRegistry.createRegistry(this.port);
         registry.rebind("SERVER", this);
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "Server published : {0}", this.toString());
-        System.out.println(new StringBuilder().append("Server published : ").append("SERVER").toString());
+        System.out.println("Server published : " + "SERVER");
     }
 
     private void terminate() throws RemoteException {
+
         for (Long id : clients.keySet()) {
             this.unregister(id, clients.get(id));
         }
@@ -187,145 +189,171 @@ public class Server extends NetworkRessource implements ServerInterface {
     }
 
     /**
-     * #{@link ServerInterface#sendEvent(long, nl.dcs.da.tss.events.Event) }
+     * {@inheritDoc}
      *
      * @param sender
-     * @param e
+     * @param event
      * @throws RemoteException
      * @throws NotBoundException
      * @throws ServerNotActiveException
-     * @throws java.net.MalformedURLException
      */
     @Override
-    public void sendEvent(long sender, Event e) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException {
-
-        if (clients.containsKey(sender) && this.beforeSend(e)) {
-            spreadServers(e, DNS.getNbServers());
-            spreadClients(e);
-        }
-    }
-
-    @Override
-    public void transferEvent(Event e) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException {
-        if (this.beforeSend(e)) {
-            spreadServers(e, this.window);
-            spreadClients(e);
-        }
-    }
-
-    private void spreadClients(Event e) throws RemoteException {
-        for (ClientInterface client : this.clients.values()) {
-            client.update(e);
-        }
-    }
-
-    private void spreadServers(Event e, int nbServer) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException {
-        for (int i = this.id; i < nbServer; i++) {
-            DNS.lookup(i).transferEvent(e);
+    public void sendEvent(long sender, Event event) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException {
+        if (this.verifyEvent(event, sender)) {
+            if (this.addToEventBag(event)) {
+                spreadServers(event, DNS.getNbServers());
+                spreadClients(event);
+            }
+            if ((this.window + 1) == eventBag.getCount(event)) {
+                state.receiveEvent(event);
+            }
         }
 
-        for (int i = 0; i > this.id; i++) {
-            DNS.lookup(i).transferEvent(e);
-        }
-    }
-
-    private boolean beforeSend(Event e) throws ServerNotActiveException {
-        System.out.println(e);
-        System.out.println(Server.getClientHost());
-        eventBag.add(e);
-        return eventBag.getCount(e) == 1;
     }
 
     /**
-     *
-     * @param sender
-     * @param c
-     * @return
+     * {@inheritDoc}
+     */
+    @Override
+    public void transferEvent(Event event) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException {
+        if (this.addToEventBag(event)) {
+            spreadServers(event, this.window);
+            spreadClients(event);
+        }
+        // Does not work yet
+        /*if ((this.window + 1) == eventBag.getCount(event)) {
+            state.receiveEvent(event);
+        }*/
+    }
+
+    private void spreadClients(Event e) throws RemoteException, OutOfSyncException {
+        for (Long id : this.clients.keySet()) {
+            if (id != e.getIssuer()) {
+                clients.get(id).update(e);
+            }
+        }
+    }
+
+    /**
+     * Send event to nbServer other servers in the order of declaration in the list of servers
+     * If the server number added to nbServer is higher than the total number of server, it will send to servers start from 0
+     * @param event the event to send
+     * @param nbServer the number of server to send the event to
+     * @throws RemoteException
+     * @throws NotBoundException
+     * @throws ServerNotActiveException
+     * @throws OutOfSyncException
+     */
+    private void spreadServers(Event event, int nbServer) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException {
+        for (int i = this.id + 1; i < this.id + nbServer + 1 && i < DNS.getNbServers(); i++) {
+            System.out.println("sending to " + i);
+            DNS.lookup(i).transferEvent(event);
+        }
+
+        if (this.id + nbServer + 1> DNS.getNbServers()){
+            for (int i = 0; i < this.id - nbServer  ; i++){
+                System.out.println("sending to " + i);
+                DNS.lookup(i).transferEvent(event);
+            }
+        }
+    }
+
+    /**
+     * Add the event to the event bag
+     * @param event the event to add to the bag
+     * @return true if the event if added for the first time
+     */
+    private boolean addToEventBag(Event event)  {
+        eventBag.add(event);
+        System.out.println(event + "\n count : " + eventBag.getCount(event));
+        return eventBag.getCount(event) == 1;
+    }
+
+    /**
+     * Add the client to the list of client connected to this server
+     * @param sender the id of the client
+     * @param client the client object
+     * @return the state of the game on the server
      * @throws RemoteException
      */
     @Override
-    public TSS register(long sender, ClientInterface c) throws RemoteException {
-        if (this.state.getPhase() == State.GameState.Open){
-            this.clients.put(sender, c);
+    public TSS register(long sender, ClientInterface client) throws RemoteException {
+        if (this.state.getPhase() == State.GameState.Open) {
+            this.clients.put(sender, client);
             return this.state;
         }
         return null;
     }
 
     /**
-     *
-     * @param sender
-     * @param c
-     * @throws RemoteException
+     * Remove a client from the list of clients connected to this server
+     * @param sender the id of the client
+     * @param client the client object
+     * @throws RemoteException in case of problem with RMI
+     * @see UnicastRemoteObject
      */
     @Override
-    public void unregister(long sender, ClientInterface c) throws RemoteException {
+    public void unregister(long sender, ClientInterface client) throws RemoteException {
         this.clients.remove(sender);
         System.gc();
         System.runFinalization();
     }
 
-    /**
-     * Send an event to the other servers telling them that the server is open
-     * for registration
-     * @throws nl.dcs.da.tss.OutOfSyncException
-     * @throws java.rmi.RemoteException
-     * @throws java.rmi.NotBoundException
-     * @throws java.rmi.server.ServerNotActiveException
-     * @throws java.net.MalformedURLException
-     */
-    public void open() throws OutOfSyncException, RemoteException, NotBoundException, ServerNotActiveException, MalformedURLException {
-        OpenGame o = new OpenGame ();
-        boolean receiveEvent = state.receiveEvent(o);
-        if (receiveEvent) {
-            this.transferEvent(o);
-        }
-    }
-
-    /**
-     * Send an event to the other servers telling them that the game has started
-     * @throws nl.dcs.da.tss.OutOfSyncException
-     * @throws java.rmi.RemoteException
-     * @throws java.rmi.NotBoundException
-     * @throws java.rmi.server.ServerNotActiveException
-     * @throws java.net.MalformedURLException
-     */
-    public void start() throws OutOfSyncException, RemoteException , NotBoundException , ServerNotActiveException , MalformedURLException {
-
-        StartGame o = new StartGame ();
-        boolean receiveEvent = state.receiveEvent(o);
-        if (receiveEvent) {
-            this.transferEvent(o);
-        }
-    }
-
-    /**
-     *
-     * @return
-     */
-    public InetAddress getIp() {
-        return ip;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public Integer getPort() {
-        return port;
-    }
 
     /**
      * Return the the RMI address associated with this server
      *
-     * @return a rmi address usable to reach this server
+     * @return a rmi address usable to reach this server registry
      */
     public String getRMIAddress() {
-        return new StringBuilder().append("//")
-                .append(this.ip.getHostAddress())
-                .append(":")
-                .append(this.port)
-                .append("/")
-                .toString();
+        return "rmi://" + this.ip.getHostAddress() + ":" + this.port + "/";
+    }
+
+    @Override
+    public String toString() {
+        return "Server{" + "ip=" + ip + ", port=" + port + ", eventBag=" + eventBag.size() + ", id=" + id + ", window=" + window + '}';
+    }
+
+
+    /**
+     * Check if this event should be accepted by the server, when received from a
+     * client.
+     *
+     * @param event The event to be filtered
+     * @return true if the event can be accepted
+     */
+    public boolean verifyEvent(Event event, long senderId) {
+        boolean accepted = true;
+
+        // NOTE: do not reject moves after gameover: gameover might be revised
+        // and the game resumed
+
+        // Event too retrospective
+        if (state.getSimulationTime() - event.getSimulationTime() > maxClientDelay)
+            accepted = false;
+
+        // Event in the future
+        if (state.getSimulationTime() - event.getSimulationTime() < 1000)
+            accepted = false;
+
+        // Game not open or playing
+        if (state.getPhase().equals(State.GameState.Closed))
+            accepted = false;
+
+        // Attempted new connection mid-game
+        if (state.getPhase().equals(State.GameState.Open) && !(event instanceof Connect))
+            accepted = false;
+
+        // Control events are reserved for clients
+        if (event instanceof StartGame || event instanceof OpenGame)
+            accepted = false;
+
+        // Clients can only control their own character
+        if (event.getIssuer() != senderId)
+            accepted = false;
+
+        if (!clients.containsKey(senderId))
+            accepted = false;
+        return accepted;
     }
 }
