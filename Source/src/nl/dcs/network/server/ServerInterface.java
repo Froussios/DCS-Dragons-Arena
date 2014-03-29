@@ -21,11 +21,42 @@ import java.rmi.server.ServerNotActiveException;
  */
 public interface ServerInterface extends Remote {
 
-    void sendEvent(long sender, Event e) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException;
+    /**
+     * Used by the client to send an event to the server
+     * @param sender
+     * @param event
+     * @throws RemoteException
+     * @throws NotBoundException
+     * @throws ServerNotActiveException
+     * @throws OutOfSyncException
+     */
+    void sendEvent(long sender, Event event) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException;
 
-    void transferEvent(Event e) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException;
+    /**
+     * Used by servers to send event to other servers
+     * @param event the transferred event
+     * @throws RemoteException
+     * @throws NotBoundException
+     * @throws ServerNotActiveException
+     * @throws OutOfSyncException
+     */
+    void transferEvent(Event event) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException;
 
-    public TSS register(long sender, ClientInterface c) throws RemoteException;
+    /**
+     * Add the client to the list of client connected to this server
+     * @param sender the id of the client
+     * @param client the client object
+     * @return the state of the game on the server
+     * @throws RemoteException
+     */
+    public TSS register(long sender, ClientInterface client) throws RemoteException;
 
-    public void unregister(long sender, ClientInterface c) throws RemoteException;
+    /**
+     * Remove a client from the list of clients connected to this server
+     * @param sender the id of the client
+     * @param client the client object
+     * @throws RemoteException in case of problem with RMI
+     * @see java.rmi.server.UnicastRemoteObject
+     */
+    public void unregister(long sender, ClientInterface client) throws RemoteException;
 }
