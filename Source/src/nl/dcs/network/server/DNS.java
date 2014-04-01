@@ -6,9 +6,11 @@
 package nl.dcs.network.server;
 
 import java.net.MalformedURLException;
+import java.net.UnknownHostException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -48,13 +50,8 @@ public class DNS {
         return getInstance().addresses.get(i);
     }
 
-    public static ServerInterface lookup(int i) throws RemoteException, NotBoundException {
-        try {
-            return (ServerInterface) Naming.lookup(getServerAddress(i) + "SERVER");
-        } catch (MalformedURLException ex) {
-            Logger.getLogger(DNS.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return null;
+    public static ServerInterface lookup(int i) throws RemoteException, NotBoundException, MalformedURLException {
+         return (ServerInterface) Naming.lookup(getServerAddress(i) + "SERVER");
     }
 
 
@@ -62,12 +59,19 @@ public class DNS {
         return getInstance().addresses.size();
     }
 
-    public static void addServer(String address) {
-
+    public static void addServer(String address) throws UnknownHostException {
+        try {
+            getInstance().addresses.add(address);
+            lookup(getNbServers() - 1);
+        } catch (RemoteException | MalformedURLException | NotBoundException e) {
+            getInstance().addresses.remove(getNbServers() - 1);
+        }
     }
 
-    public static void addServer(String address, int index) {
+
+    public static void list() {
+        for (String address : getInstance().addresses) {
+            System.out.println(address);
+        }
     }
-
-
 }

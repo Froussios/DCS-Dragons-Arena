@@ -124,6 +124,10 @@ public class Server extends NetworkRessource implements ServerInterface {
         System.out.println(s);
     }
 
+    public Server (int id, String address) throws RemoteException, UnknownHostException, MalformedURLException {
+        this(id, address, 2);
+    }
+
     public Server(int id) throws UnknownHostException, RemoteException, MalformedURLException {
         this(id, DNS.getServerAddress(id), 2);
     }
@@ -154,7 +158,7 @@ public class Server extends NetworkRessource implements ServerInterface {
                 String command = input.next().toLowerCase();
                 switch (command) {
                     case "send":
-                        server.transferEvent(new MarkEvent(new Random().nextLong()));
+                        server.transferEvent(new MarkEvent(server.state.getSimulationTime()));
                         break;
                     case "open":
                         server.transferEvent(new OpenGame());
@@ -164,7 +168,11 @@ public class Server extends NetworkRessource implements ServerInterface {
                         break;
                     case "terminate":
                     case "exit":
-                        server.terminate();
+                        server.terminate();break;
+                    case "list":
+                        DNS.list();break;
+                    case "add":
+                        DNS.addServer(input.next());break;
                     default:
                         System.out.println("Unknown command");
                 }
@@ -205,7 +213,7 @@ public class Server extends NetworkRessource implements ServerInterface {
      * @throws ServerNotActiveException
      */
     @Override
-    public void sendEvent(long sender, Event event) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException {
+    public void sendEvent(long sender, Event event) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException, MalformedURLException {
         if (this.verifyEvent(event, sender)) {
             if (this.addToEventBag(event)) {
                 spreadServers(event, DNS.getNbServers());
@@ -215,12 +223,14 @@ public class Server extends NetworkRessource implements ServerInterface {
 
     }
 
+
     /**
      * {@inheritDoc}
      */
     @Override
-    public void transferEvent(Event event) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException {
+    public void transferEvent(Event event) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException, MalformedURLException {
         if (this.addToEventBag(event)) {
+            System.out.println(event);
             spreadServers(event, this.window);
             spreadClients(event);
         }
@@ -244,14 +254,15 @@ public class Server extends NetworkRessource implements ServerInterface {
      * @throws ServerNotActiveException
      * @throws OutOfSyncException
      */
-    private void spreadServers(Event event, int nbServer) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException {
+    private void spreadServers(Event event, int nbServer) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException, MalformedURLException {
         for (int i = this.id + 1; i < this.id + nbServer + 1 && i < DNS.getNbServers(); i++) {
+            System.out.println("Sending to " + DNS.getServerAddress(i) );
             Logger.getLogger(this.getClass().getName()).fine("Sending " + event + " to server " + i);
             DNS.lookup(i).transferEvent(event);
         }
-
         if (this.id + nbServer + 1> DNS.getNbServers()){
             for (int i = 0; i < this.id - nbServer  ; i++){
+                System.out.println("Sending to " + DNS.getServerAddress(i) );
                 Logger.getLogger(this.getClass().getName()).fine("sending to " + i);
                 DNS.lookup(i).transferEvent(event);
             }
@@ -348,4 +359,11 @@ public class Server extends NetworkRessource implements ServerInterface {
         return Logger.getLogger(this.getClass().getName());
     }
 
+    public Integer getPort() {
+        return port;
+    }
+
+    public InetAddress getIp() {
+        return ip;
+    }
 }
