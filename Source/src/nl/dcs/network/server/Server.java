@@ -54,35 +54,12 @@ public class Server extends NetworkRessource implements ServerInterface {
      * @param id server's identifier
      * @param ip server's address default to {@link java.net.InetAddress#getLoopbackAddress()}
      * @param port server"s port default to 1099
-     * @param window number of server to transfert the data upon reception default to 2
+     * @param window number of server to transfer the data upon reception default to 2
      * @throws RemoteException
      */
-    private Server(int id, InetAddress ip, Integer port, Integer window) throws RemoteException {
-
-        super();
-        if (window < 0 || window > DNS.getNbServers()) {
-            throw new IllegalArgumentException();
-        }
-        this.ip = ip;
-        this.port = port;
-        this.id = id;
-        String s = new StringBuilder().append("Creation of server object : ").append(this.id).toString();
-        Logger.getLogger(this.getClass().getName()).fine(s);
-        System.out.println(s);
-    }
-
-    private Server(int id, InetAddress ip, Integer port) throws RemoteException {
-        this(id, ip, port, 2);
-    }
 
 
-    private Server(int id, InetAddress ip) throws RemoteException {
-        this(id, ip, 1099, 2);
-    }
 
-    private Server(int id, Integer port) throws RemoteException {
-        this(id, InetAddress.getLoopbackAddress(), port);
-    }
 
     /**
      * Constructor from string representing the address of the rmi registry
@@ -95,6 +72,9 @@ public class Server extends NetworkRessource implements ServerInterface {
      */
     public Server(int id, String address, int window) throws UnknownHostException, RemoteException, MalformedURLException {
         super();
+        if (window < 0 || window > DNS.getNbServers()) {
+            throw new IllegalArgumentException();
+        }
         this.id = id;
         address = address.replace("rmi:", "");
         if (address.length() - address.replace(":", "").length() != 1) {
@@ -119,17 +99,12 @@ public class Server extends NetworkRessource implements ServerInterface {
         System.out.println(s);
     }
 
-    public Server (int id, String address) throws RemoteException, UnknownHostException, MalformedURLException {
-        this(id, address, 2);
-    }
+
 
     public Server(int id) throws UnknownHostException, RemoteException, MalformedURLException {
         this(id, DNS.getServerAddress(id), 2);
     }
 
-    public Server(int id, int window) throws UnknownHostException, RemoteException, MalformedURLException {
-        this(id, DNS.getServerAddress(id), window);
-    }
 
     /**
      * Launch the server in wait of event to transfer
