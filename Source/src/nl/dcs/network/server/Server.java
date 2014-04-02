@@ -143,6 +143,8 @@ public class Server extends NetworkRessource implements ServerInterface {
                         DNS.list();break;
                     case "add":
                         DNS.addServer(input.next());break;
+                    case "refresh":
+                        server.refresh(input.nextInt());
                     default:
                         System.out.println("Unknown command");
                 }
@@ -150,6 +152,13 @@ public class Server extends NetworkRessource implements ServerInterface {
         } catch (UnknownHostException | MalformedURLException | RemoteException | OutOfSyncException | NotBoundException | ServerNotActiveException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    private void refresh(int i) throws RemoteException, NotBoundException {
+        if (i == this.id) {
+            throw new IllegalArgumentException();
+        }
+        DNS.lookup(i).catchup(this.id);
     }
 
     /**
