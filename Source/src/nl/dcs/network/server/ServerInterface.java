@@ -43,6 +43,14 @@ public interface ServerInterface extends Remote {
     void transferEvent(Event event) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException;
 
     /**
+     * Called by servers when they are out of sync or in need of an updated tss state
+     * @param id the calling server id
+     * @return
+     * @throws RemoteException
+     */
+    TSS catchup (int id) throws RemoteException;
+
+    /**
      * Add the client to the list of client connected to this server
      * @param sender the id of the client
      * @param client the client object

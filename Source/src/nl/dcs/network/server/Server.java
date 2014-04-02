@@ -37,6 +37,7 @@ public class Server extends NetworkRessource implements ServerInterface {
 
     private static final long serialVersionUID = 5446617274331655787L;
     private static final long maxClientDelay = 150000;
+    private static final long maxServerWatch = 20000;
 
     private final InetAddress ip;
     private final Integer port;
@@ -45,7 +46,7 @@ public class Server extends NetworkRessource implements ServerInterface {
     private final HashMap<Integer, Long> watchServer = new HashMap<>();
     private final Integer id;
     private Integer window = 2;
-    private final TSS state = new TimedTSS(new State(), 50L);
+    private final TSS state = new TimedTSS(new State(), 500000L);
 
 
     /**
@@ -232,7 +233,7 @@ public class Server extends NetworkRessource implements ServerInterface {
 
     @Override
     public TSS catchup(int id) throws RemoteException {
-
+        watchServer.put(id, this.state.getSimulationTime());
         return this.state;
     }
 
@@ -265,6 +266,14 @@ public class Server extends NetworkRessource implements ServerInterface {
                 System.out.println("Sending to " + DNS.getServerAddress(i) );
                 Logger.getLogger(this.getClass().getName()).fine("sending to " + i);
                 DNS.lookup(i).transferEvent(event);
+            }
+        }
+        for (int serverId : this.watchServer.keySet()){
+            System.out.println("Sending to " + DNS.getServerAddress(serverId) );
+            Logger.getLogger(this.getClass().getName()).fine("sending to " + serverId);
+            DNS.lookup(serverId).transferEvent(event);
+            if (event.getSimulationTime() > this.watchServer.get(serverId) + Server.maxServerWatch){
+                this.watchServer.remove(serverId);
             }
         }
     }
