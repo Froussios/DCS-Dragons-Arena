@@ -50,8 +50,12 @@ public class DNS {
         return getInstance().addresses.get(i);
     }
 
-    public static ServerInterface lookup(int i) throws RemoteException, NotBoundException, MalformedURLException {
-         return (ServerInterface) Naming.lookup(getServerAddress(i) + "SERVER");
+    public static ServerInterface lookup(int i) throws RemoteException, NotBoundException {
+        try {
+            return (ServerInterface) Naming.lookup(getServerAddress(i) + "SERVER");
+        } catch (MalformedURLException e) {
+            return null;
+        }
     }
 
 
@@ -63,7 +67,7 @@ public class DNS {
         try {
             getInstance().addresses.add(address);
             lookup(getNbServers() - 1);
-        } catch (RemoteException | MalformedURLException | NotBoundException e) {
+        } catch (RemoteException  | NotBoundException e) {
             getInstance().addresses.remove(getNbServers() - 1);
         }
     }
