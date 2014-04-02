@@ -40,11 +40,12 @@ public class Server extends NetworkRessource implements ServerInterface {
 
     private final InetAddress ip;
     private final Integer port;
-    private final TreeBag<Event> eventBag;
-    private final HashMap<Long, ClientInterface> clients;
+    private final TreeBag<Event> eventBag = new TreeBag<>();
+    private final HashMap<Long, ClientInterface> clients = new HashMap<>();
+    private final HashMap<Integer, Long> watchServer = new HashMap<>();
     private final Integer id;
-    private final Integer window;
-    private final TSS state;
+    private Integer window = 2;
+    private final TSS state = new TimedTSS(new State(), 50L);
 
 
     /**
@@ -63,11 +64,7 @@ public class Server extends NetworkRessource implements ServerInterface {
         }
         this.ip = ip;
         this.port = port;
-        this.eventBag = new TreeBag<>();
         this.id = id;
-        this.window = window;
-        this.clients = new HashMap<>();
-        this.state = new TimedTSS(new State(), 50L);
         String s = new StringBuilder().append("Creation of server object : ").append(this.id).toString();
         Logger.getLogger(this.getClass().getName()).fine(s);
         System.out.println(s);
@@ -113,10 +110,7 @@ public class Server extends NetworkRessource implements ServerInterface {
             }
         }
         this.ip = ip;
-        this.state = new TimedTSS(new State(), 50L);
         this.port = port;
-        this.clients = new HashMap<>();
-        this.eventBag = new TreeBag<>();
         this.window = window;
         
         String s = new StringBuilder().append("Creation of server object : ").append(this.id).toString();
@@ -213,7 +207,7 @@ public class Server extends NetworkRessource implements ServerInterface {
      * @throws ServerNotActiveException
      */
     @Override
-    public void sendEvent(long sender, Event event) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException, MalformedURLException {
+    public void sendEvent(long sender, Event event) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException {
         if (this.verifyEvent(event, sender)) {
             if (this.addToEventBag(event)) {
                 spreadServers(event, DNS.getNbServers());
@@ -228,12 +222,18 @@ public class Server extends NetworkRessource implements ServerInterface {
      * {@inheritDoc}
      */
     @Override
-    public void transferEvent(Event event) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException, MalformedURLException {
+    public void transferEvent(Event event) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException {
         if (this.addToEventBag(event)) {
             System.out.println(event);
             spreadServers(event, this.window);
             spreadClients(event);
         }
+    }
+
+    @Override
+    public TSS catchup(int id) throws RemoteException {
+
+        return this.state;
     }
 
     private void spreadClients(Event e) throws RemoteException, OutOfSyncException {
@@ -254,7 +254,7 @@ public class Server extends NetworkRessource implements ServerInterface {
      * @throws ServerNotActiveException
      * @throws OutOfSyncException
      */
-    private void spreadServers(Event event, int nbServer) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException, MalformedURLException {
+    private void spreadServers(Event event, int nbServer) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException{
         for (int i = this.id + 1; i < this.id + nbServer + 1 && i < DNS.getNbServers(); i++) {
             System.out.println("Sending to " + DNS.getServerAddress(i) );
             Logger.getLogger(this.getClass().getName()).fine("Sending " + event + " to server " + i);
