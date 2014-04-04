@@ -1,5 +1,17 @@
 package nl.dcs.network.server;
 
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
+import joptsimple.OptionSpec;
+import nl.dcs.da.tss.OutOfSyncException;
+import nl.dcs.da.tss.State;
+import nl.dcs.da.tss.TSS;
+import nl.dcs.da.tss.TimedTSS;
+import nl.dcs.da.tss.events.*;
+import nl.dcs.network.NetworkRessource;
+import nl.dcs.network.client.ClientInterface;
+import org.apache.commons.collections4.bag.TreeBag;
+
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
@@ -9,28 +21,14 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
 import java.util.HashMap;
-import java.util.Random;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import nl.dcs.da.tss.OutOfSyncException;
-import nl.dcs.da.tss.State;
-import nl.dcs.da.tss.TSS;
-import nl.dcs.da.tss.TimedTSS;
-import nl.dcs.da.tss.events.Connect;
-import nl.dcs.da.tss.events.Event;
-import nl.dcs.da.tss.events.MarkEvent;
-import nl.dcs.da.tss.events.OpenGame;
-import nl.dcs.da.tss.events.StartGame;
-import nl.dcs.network.NetworkRessource;
-import nl.dcs.network.client.ClientInterface;
-
-import org.apache.commons.collections4.bag.TreeBag;
-
 /**
- * @version 0.1
  * @author Ivanis
+ * @version 0.1
  */
 
 public class Server extends NetworkRessource implements ServerInterface {
@@ -38,90 +36,87 @@ public class Server extends NetworkRessource implements ServerInterface {
     private static final long serialVersionUID = 5446617274331655787L;
     private static final long maxClientDelay = 150000;
     private static final long maxServerWatch = 20000;
+    private static final String rmiAddressPattern = "(rmi:)?//([a-zA-Z][a-zA-Z0-9]*)?:?(\\d{4})?/";
 
-    private final InetAddress ip;
     private final Integer port;
     private final TreeBag<Event> eventBag = new TreeBag<>();
     private final HashMap<Long, ClientInterface> clients = new HashMap<>();
-    private final HashMap<Integer, Long> watchServer = new HashMap<>();
+    private final HashMap<Integer, Long> watchedServer = new HashMap<>();
+    private final ConcurrentSkipListMap<Integer, String> serverAddress = new ConcurrentSkipListMap<>();
     private final Integer id;
+    private final TSS state = new TimedTSS(new State(), 5000L);
     private Integer window = 2;
-    private final TSS state = new TimedTSS(new State(), 500000L);
 
-
-    /**
-     * Constructor
-     * @param id server's identifier
-     * @param ip server's address default to {@link java.net.InetAddress#getLoopbackAddress()}
-     * @param port server"s port default to 1099
-     * @param window number of server to transfer the data upon reception default to 2
-     * @throws RemoteException
-     */
-
-
+    public Server(Integer id, Integer port, Integer window) throws RemoteException {
+        this.port = port;
+        this.id = id;
+        this.window = window;
+        this.serverAddress.put(id, this.getRMIAddress());
+    }
 
 
     /**
      * Constructor from string representing the address of the rmi registry
-     * @param id the identifier in the network
+     *
+     * @param id      the identifier in the network
      * @param address the rmi address of the server
-     * @param window the number of server you should contact
-     * @throws UnknownHostException if the host is not known
-     * @throws RemoteException @see java.rmi.server.UnicastRemoteObject#UnicastRemoteObject()
+     * @param window  the number of server you should contact
+     * @throws UnknownHostException  if the host is not known
+     * @throws RemoteException       @see java.rmi.server.UnicastRemoteObject#UnicastRemoteObject()
      * @throws MalformedURLException if the address is not correct
      */
     public Server(int id, String address, int window) throws UnknownHostException, RemoteException, MalformedURLException {
         super();
-        if (window < 0 || window > DNS.getNbServers()) {
-            throw new IllegalArgumentException();
-        }
         this.id = id;
-        address = address.replace("rmi:", "");
-        if (address.length() - address.replace(":", "").length() != 1) {
-            throw new MalformedURLException();
-        }
-        String[] tokens = address.split("/");
+        if (!address.matches(Server.rmiAddressPattern)) throw new MalformedURLException();
+        address = address.replace("rmi:", "").replace("/", "");
         int port = 0;
-        InetAddress ip = InetAddress.getLoopbackAddress();
-        for (String token : tokens) {
-            if (token.contains(":")) {
-                String[] subtoken = token.split(":");
-                ip = subtoken[0].isEmpty() ? InetAddress.getLoopbackAddress() : InetAddress.getByName(subtoken[0]);
-                port = subtoken.length <= 1 ? 1099 : Integer.parseInt(subtoken[1]);
-            }
+        InetAddress ip = InetAddress.getLocalHost();
+        if (address.contains(":")) {
+            String[] subtoken = address.split(":");
+            ip = subtoken[0].isEmpty() ? InetAddress.getLocalHost() : InetAddress.getByName(subtoken[0]);
+            port = subtoken[1].isEmpty() ? 1099 : Integer.parseInt(subtoken[1]);
         }
-        this.ip = ip;
+
         this.port = port;
         this.window = window;
-        
+        this.serverAddress.put(id, address);
         String s = new StringBuilder().append("Creation of server object : ").append(this.id).toString();
         Logger.getLogger(this.getClass().getName()).fine(s);
         System.out.println(s);
     }
 
-
-
-    public Server(int id) throws UnknownHostException, RemoteException, MalformedURLException {
-        this(id, DNS.getServerAddress(id), 2);
-    }
-
-
     /**
      * Launch the server in wait of event to transfer
+     *
      * @param args Only one is accepted, the id of the server (Bound to change during production)
      */
     public static void main(String[] args) {
         try {
-            if (args.length != 1) {
+            Server server;
+            OptionParser parser = new OptionParser();
+
+            parser.nonOptions().ofType(Integer.class);
+            OptionSpec<Integer> window = parser.accepts("window").withOptionalArg().ofType(Integer.class).defaultsTo(2);
+            OptionSpec<Integer> port = parser.accepts("port").withOptionalArg().ofType(Integer.class).defaultsTo(1099);
+
+            OptionSet set = parser.parse(args);
+            set.valueOf(window);
+
+
+            if (set.nonOptionArguments().size() != 1) {
+                System.out.println("Missing id");
                 System.exit(1);
             }
-
-            Server server = new Server(Integer.parseInt(args[0]));
+            if (!(set.nonOptionArguments().get(0) instanceof Integer)) {
+                throw new IllegalArgumentException("id is not a int");
+            }
+            int id = (Integer) set.nonOptionArguments().get(0);
+            server = new Server(id, set.valueOf(port), set.valueOf(window));
             server.expose();
             System.out.println(server);
-            System.out.println(new StringBuilder().append("Server start ").append(args[0]).toString());
+            System.out.println("Server start " + args[0]);
             server.getLogger().fine("Server ready to receive events");
-
             Scanner input = new Scanner(System.in);
             while (true) {
                 System.out.print("> ");
@@ -138,27 +133,41 @@ public class Server extends NetworkRessource implements ServerInterface {
                         break;
                     case "terminate":
                     case "exit":
-                        server.terminate();break;
+                        server.terminate();
+                        break;
                     case "list":
-                        DNS.list();break;
+                        server.listServer();
+                        break;
                     case "add":
-                        DNS.addServer(input.next());break;
+                        server.addServer(input.nextInt(), input.next());
+                        break;
                     case "refresh":
                         server.refresh(input.nextInt());
                     default:
                         System.out.println("Unknown command");
                 }
             }
-        } catch (UnknownHostException | MalformedURLException | RemoteException | OutOfSyncException | NotBoundException | ServerNotActiveException ex) {
+        } catch (RemoteException | OutOfSyncException | NotBoundException | ServerNotActiveException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    private void listServer() {
+        for (Integer id : serverAddress.keySet()) {
+            System.out.println(id + ":" + serverAddress.get(id));
+        }
+    }
+
+    @Override
+    public void putServer(int id, String address) {
+        this.serverAddress.put(id, address);
     }
 
     private void refresh(int i) throws RemoteException, NotBoundException {
         if (i == this.id) {
             throw new IllegalArgumentException();
         }
-        DNS.lookup(i).catchup(this.id);
+        lookup(i).watch(this.id);
     }
 
     /**
@@ -170,7 +179,7 @@ public class Server extends NetworkRessource implements ServerInterface {
     public void expose() throws RemoteException {
         Registry registry = LocateRegistry.createRegistry(this.port);
         registry.rebind("SERVER", this);
-        Logger.getLogger(this.getClass().getName()).fine( "Server published : " + this + " on " + "SERVER");
+        Logger.getLogger(this.getClass().getName()).fine("Server published : " + this + " on " + "SERVER");
     }
 
     private void terminate() throws RemoteException {
@@ -216,15 +225,23 @@ public class Server extends NetworkRessource implements ServerInterface {
     }
 
     @Override
-    public TSS catchup(int id) throws RemoteException {
-        watchServer.put(id, this.state.getSimulationTime());
+    public TSS watch(int id) throws RemoteException {
+        watchedServer.put(id, this.state.getSimulationTime());
         return this.state;
     }
 
-    private void spreadClients(Event e) throws RemoteException, OutOfSyncException {
+
+    /**
+     * Spread an event to the clients known to this server
+     *
+     * @param event The event to be spread
+     * @throws RemoteException
+     * @throws OutOfSyncException
+     */
+    private void spreadClients(Event event) throws RemoteException, OutOfSyncException {
         for (Long id : this.clients.keySet()) {
-            if (id != e.getIssuer()) {
-                clients.get(id).update(e);
+            if (id != event.getIssuer()) {
+                clients.get(id).update(event);
             }
         }
     }
@@ -232,42 +249,52 @@ public class Server extends NetworkRessource implements ServerInterface {
     /**
      * Send event to nbServer other servers in the order of declaration in the list of servers
      * If the server number added to nbServer is higher than the total number of server, it will send to servers start from 0
-     * @param event the event to send
+     * If the number of servers is below the window then it will do nothing
+     *
+     * @param event    The event to be spread
      * @param nbServer the number of server to send the event to
      * @throws RemoteException
      * @throws NotBoundException
      * @throws ServerNotActiveException
      * @throws OutOfSyncException
      */
-    private void spreadServers(Event event, int nbServer) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException{
-        for (int i = this.id + 1; i < this.id + nbServer + 1 && i < DNS.getNbServers(); i++) {
-            System.out.println("Sending to " + DNS.getServerAddress(i) );
-            Logger.getLogger(this.getClass().getName()).fine("Sending " + event + " to server " + i);
-            DNS.lookup(i).transferEvent(event);
+    private void spreadServers(Event event, int nbServer) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException {
+        if (this.window > this.serverAddress.keySet().size()) {
+            String message = "Not enough servers to operate";
+            System.out.println(message);
+            this.getLogger().log(Level.SEVERE, message);
+            return;
         }
-        if (this.id + nbServer + 1> DNS.getNbServers()){
-            for (int i = 0; i < this.id - nbServer  ; i++){
-                System.out.println("Sending to " + DNS.getServerAddress(i) );
-                Logger.getLogger(this.getClass().getName()).fine("sending to " + i);
-                DNS.lookup(i).transferEvent(event);
+        int count = 0;
+        Integer key = this.id;
+        do {
+            key = this.serverAddress.higherKey(key);
+            if (key == null) {
+                key = this.serverAddress.firstKey();
             }
-        }
-        for (int serverId : this.watchServer.keySet()){
-            System.out.println("Sending to " + DNS.getServerAddress(serverId) );
+            System.out.println("sending to : " + key);
+            this.lookup(key).transferEvent(event);
+            count++;
+        } while (count < window);
+
+        //Send event to watched servers
+        for (int serverId : this.watchedServer.keySet()) {
+            System.out.println("Sending to " + this.serverAddress.get(serverId));
             Logger.getLogger(this.getClass().getName()).fine("sending to " + serverId);
-            DNS.lookup(serverId).transferEvent(event);
-            if (event.getSimulationTime() > this.watchServer.get(serverId) + Server.maxServerWatch){
-                this.watchServer.remove(serverId);
+            this.lookup(serverId).transferEvent(event);
+            if (event.getSimulationTime() > this.watchedServer.get(serverId) + Server.maxServerWatch) {
+                this.watchedServer.remove(serverId);
             }
         }
     }
 
     /**
      * Add the event to the event bag
+     *
      * @param event the event to add to the bag
      * @return true if the event if added for the first time
      */
-    private boolean addToEventBag(Event event)  {
+    private boolean addToEventBag(Event event) {
         eventBag.add(event);
         getLogger().fine(event + "\n count : " + eventBag.getCount(event));
         return eventBag.getCount(event) == 1;
@@ -290,6 +317,33 @@ public class Server extends NetworkRessource implements ServerInterface {
         System.runFinalization();
     }
 
+    public void addServer(int id, String address) throws RemoteException {
+        if (!address.matches(Server.rmiAddressPattern)) {
+            System.out.println("The address in not in a correct format");
+            return;
+        }
+        if (this.serverAddress.containsKey(id) && this.serverAddress.get(id) == address) {
+            System.out.println("The address is already known with the id : " + id);
+            return;
+        }
+        if (this.serverAddress.containsValue(address)) {
+            System.out.println("The address is already known but not with the id : " + id);
+            this.listServer();
+            return;
+        }
+        this.watch(id);
+        for (Integer i : this.serverAddress.keySet()) {
+            try {
+                String a = this.serverAddress.get(i);
+                this.lookup(address).putServer(i, a);
+                this.lookup(a).putServer(id, address);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
 
     /**
      * Return the the RMI address associated with this server
@@ -297,12 +351,22 @@ public class Server extends NetworkRessource implements ServerInterface {
      * @return a rmi address usable to reach this server registry
      */
     public String getRMIAddress() {
-        return "rmi://" + this.ip.getHostAddress() + ":" + this.port + "/";
+        try {
+            return "rmi://" + InetAddress.getLocalHost().getHostAddress() + ":" + this.port + "/";
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override
     public String toString() {
-        return "Server{" + "ip=" + ip + ", port=" + port + ", eventBag=" + eventBag.size() + ", id=" + id + ", window=" + window + '}';
+        try {
+            return "Server{" + "ip=" + InetAddress.getLocalHost() + ", port=" + port + ", eventBag=" + eventBag.size() + ", id=" + id + ", window=" + window + '}';
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
 
@@ -347,16 +411,11 @@ public class Server extends NetworkRessource implements ServerInterface {
             accepted = false;
         return accepted;
     }
-    
-    public Logger getLogger(){
-        return Logger.getLogger(this.getClass().getName());
+
+
+    public ServerInterface lookup(int id) {
+        return this.lookup(this.serverAddress.get(id));
     }
 
-    public Integer getPort() {
-        return port;
-    }
 
-    public InetAddress getIp() {
-        return ip;
-    }
 }

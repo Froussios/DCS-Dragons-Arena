@@ -68,6 +68,12 @@ public class ClientNetwork
 
 	}
 
+    public void connect (String address) throws RemoteException, NotBoundException{
+        this.server = this.lookup(address);
+        TSS state = this.server.register(this.id, this);
+        this.state.loadFrom(state);
+    }
+
 
 	public void disconnect() throws RemoteException
 	{

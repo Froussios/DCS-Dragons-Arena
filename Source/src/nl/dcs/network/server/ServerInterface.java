@@ -48,7 +48,8 @@ public interface ServerInterface extends Remote {
      * @return
      * @throws RemoteException
      */
-    TSS catchup (int id) throws RemoteException;
+    TSS watch (int id) throws RemoteException;
+
 
     /**
      * Add the client to the list of client connected to this server
@@ -67,4 +68,6 @@ public interface ServerInterface extends Remote {
      * @see java.rmi.server.UnicastRemoteObject
      */
     public void unregister(long sender, ClientInterface client) throws RemoteException;
+
+    public void putServer(int id, String address) throws RemoteException;
 }
