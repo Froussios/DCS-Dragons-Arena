@@ -32,8 +32,8 @@ public class BotProgram
 	};
 
 
-	private final TSS game;
-	private final ClientNetwork connection;
+	private final TSS game; // Keep final
+	private ClientNetwork connection;
 	private TimedAvatarOperator AI;
 
 
@@ -42,11 +42,10 @@ public class BotProgram
 	 * 
 	 * @throws RemoteException
 	 */
-	public BotProgram() throws RemoteException
+	public BotProgram()
 	{
-		this.game = new TimedTSS(new State(), 30000);
+		this.game = new TimedTSS(new State(), 60000);
 		this.game.addListener(this);
-		this.connection = new ClientNetwork(game);
 	}
 
 
@@ -56,19 +55,28 @@ public class BotProgram
 	 * @param as The role for the bot to assume
 	 * @param id The in-game id for the bot.
 	 * @param actionInterval How often the bot should execute an action.
+	 * @throws NotBoundException
+	 * @throws RemoteException
 	 */
-	public void run(Role as, long id, long actionInterval)
+	public void run(Role as, long id, String server, long actionInterval) throws RemoteException, NotBoundException
 	{
 		if (as == null)
 			throw new IllegalArgumentException("Did not specify what to play as.");
 
-		// TODO Connect
+		// Connect
+		this.connection = new ClientNetwork(game, id);
+		this.connection.connect(server); // Also loads state
 
 		// TODO Get game
 
-		// TODO Create AI
+		// Create AI
+		if (as.equals(Role.Player))
+			this.AI = new PlayerAI(id, this.game, 2000);
+		else if (as.equals(Role.Dragon))
+			this.AI = new DragonAI(id, this.game, 2000);
 
-		// TODO Start acting on receive
+		// Start acting on receive
+		this.game.addListener(this);
 	}
 
 
@@ -76,21 +84,37 @@ public class BotProgram
 	{
 		Scanner scanner = new Scanner(System.in);
 
+		System.out.print("<id> <role>: ");
+		long id = scanner.nextLong();
+		String role = scanner.next().toLowerCase();
+
 		// TODO Connect
-		System.out.print("Enter the server : ");
-		String serverName = scanner.next();
-		this.connection.connect(1);
+		while (true)
+		{
+			try
+			{
+				System.out.print("Enter the server : ");
+				String serverAddress = scanner.next();
+				this.connection = new ClientNetwork(game, id);
+				this.connection.connect(serverAddress); // Also loads game
+				break;
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
 
 		// TODO Get game
 
 		// TODO Create AI
-		System.out.print("<id> <role>: ");
-		long id = scanner.nextLong();
-		String r = scanner.next().toLowerCase();
-		if (r.equals("dragon"))
+		if (role.equals("dragon"))
 			AI = new DragonAI(id, game, 5000);
-		else if (r.equals("player"))
+		else if (role.equals("player"))
 			AI = new PlayerAI(id, game, 5000);
+
+		// Start acting on receive
+		this.game.addListener(this);
 	}
 
 
@@ -110,6 +134,21 @@ public class BotProgram
 				e.printStackTrace();
 			}
 		}
+	}
+
+
+	/**
+	 * Run an interactive client
+	 * 
+	 * @param args
+	 * @throws RemoteException
+	 * @throws NotBoundException
+	 */
+	public static void main(String[] args) throws RemoteException, NotBoundException
+	{
+		System.out.println("Starting bot...");
+		BotProgram bot = new BotProgram();
+		bot.run(Role.Player, 1, "rmi://localhost:1100/", 3000);
 	}
 
 }
