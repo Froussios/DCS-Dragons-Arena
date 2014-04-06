@@ -24,7 +24,7 @@ public class EventFilter
 
 	/**
 	 * Create a new server-side filter
-	 *
+	 * 
 	 * @param context The live game to check against
 	 */
 	public EventFilter(TSS context, long client)
@@ -35,51 +35,55 @@ public class EventFilter
 
 
 	/**
-	 * Check if this event should be accepted by the server, when received from a
-	 * client.
-	 *
+	 * Check if this event should be accepted by the server, when received from
+	 * a client.
+	 * 
 	 * @param event The event to be filtered
 	 * @return true if the event can be accepted
 	 */
 	public boolean acceptEventFromClient(Event event)
 	{
 		boolean accepted = true;
+		String rejection = null;
 
 		// NOTE: do not reject moves after gameover: gameover might be revised
 		// and the game resumed
 
 		// Event too retrospective
-		if (context.getSimulationTime() - event.getSimulationTime() > this.maxClientDelay)
-			accepted = false;
+		if (context.getSimulationTime() - event.getSimulationTime() > maxClientDelay)
+			rejection = "Event too retrospective";
 
 		// Event in the future
-		if (context.getSimulationTime() - event.getSimulationTime() < 1000)
-			accepted = false;
+		if (context.getSimulationTime() - event.getSimulationTime() < -1000)
+			rejection = "Event in the future";
 
 		// Game not open or playing
 		if (context.getPhase().equals(State.GameState.Closed))
-			accepted = false;
+			rejection = "Game not open or playing";
 
 		// Attempted new connection mid-game
 		if (context.getPhase().equals(State.GameState.Open) && !(event instanceof Connect))
-			accepted = false;
+			rejection = "Attempted new connection mid-game";
 
 		// Control events are reserved for clients
 		if (event instanceof StartGame || event instanceof OpenGame)
-			accepted = false;
+			rejection = "Control events are reserved for clients";
 
 		// Clients can only control their own character
 		if (event.getIssuer() != this.client)
-			accepted = false;
+			rejection = "Clients can only control their own character";
 
+		System.out.println("Rejected: " + event + ". Reason: " + rejection);
+
+		accepted = rejection != null;
 		return accepted;
 	}
 
 
 	/**
-	 * Check if this event should be accepted by the server, when received from a
-	 * server.
-	 *
+	 * Check if this event should be accepted by the server, when received from
+	 * a server.
+	 * 
 	 * @param event
 	 * @return true, if the event can be accepted
 	 */
