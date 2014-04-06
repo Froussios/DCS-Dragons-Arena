@@ -308,11 +308,8 @@ public class Server extends NetworkRessource implements ServerInterface {
 
     @Override
     public TSS register(long sender, ClientInterface client) throws RemoteException {
-        if (this.state.getPhase() == State.GameState.Open) {
             this.clients.put(sender, client);
             return this.state;
-        }
-        return null;
     }
 
 
