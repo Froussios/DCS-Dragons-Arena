@@ -2,22 +2,31 @@ package nl.dcs.app;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.rmi.server.ServerNotActiveException;
 import java.util.Scanner;
 
 import nl.dcs.da.client.DragonAI;
 import nl.dcs.da.client.PlayerAI;
 import nl.dcs.da.client.TimedAvatarOperator;
+import nl.dcs.da.client.TimedAvatarOperator.ActionListener;
+import nl.dcs.da.tss.Actor;
 import nl.dcs.da.tss.Battlefield;
+import nl.dcs.da.tss.Dragon;
+import nl.dcs.da.tss.OutOfSyncException;
+import nl.dcs.da.tss.Player;
+import nl.dcs.da.tss.Point;
 import nl.dcs.da.tss.State;
 import nl.dcs.da.tss.TSS;
 import nl.dcs.da.tss.TimedTSS;
+import nl.dcs.da.tss.events.Connect;
+import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.events.StartGame;
 import nl.dcs.da.tss.util.Alarm.AlarmRunningException;
 import nl.dcs.network.client.ClientNetwork;
 
 
 public class BotProgram
-		implements Battlefield.Listener
+		implements Battlefield.Listener, ActionListener
 {
 
 	/**
@@ -57,8 +66,10 @@ public class BotProgram
 	 * @param actionInterval How often the bot should execute an action.
 	 * @throws NotBoundException
 	 * @throws RemoteException
+	 * @throws OutOfSyncException
 	 */
-	public void run(Role as, long id, String server, long actionInterval) throws RemoteException, NotBoundException
+	public void run(Role as, long id, String server, long actionInterval)
+			throws RemoteException, NotBoundException, OutOfSyncException
 	{
 		if (as == null)
 			throw new IllegalArgumentException("Did not specify what to play as.");
@@ -70,17 +81,32 @@ public class BotProgram
 		// TODO Get game
 
 		// Create AI
-		if (as.equals(Role.Player))
-			this.AI = new PlayerAI(id, this.game, 2000);
-		else if (as.equals(Role.Dragon))
-			this.AI = new DragonAI(id, this.game, 2000);
+		Actor actor = null;
+		if (as.equals(Role.Dragon))
+		{
+			AI = new DragonAI(id, game, 2000);
+			actor = new Dragon(id);
+		}
+		else if (as.equals(Role.Player))
+		{
+			AI = new PlayerAI(id, game, 2000);
+			actor = new Player(id);
+		}
 
 		// Start acting on receive
 		this.game.addListener(this);
+
+		System.out.println("Connected as " + as + "-" + id + " at " + server);
+
+		// Join game
+		Connect connect = new Connect(id, actor, Point.random());
+		this.game.receiveEvent(connect);
+		this.onAction(connect);
 	}
 
 
-	public void runIteractive() throws RemoteException, NotBoundException
+	public void runIteractive()
+			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
 	{
 		Scanner scanner = new Scanner(System.in);
 
@@ -105,13 +131,26 @@ public class BotProgram
 			}
 		}
 
-		// TODO Get game
-
 		// TODO Create AI
+		Actor actor = null;
 		if (role.equals("dragon"))
+		{
 			AI = new DragonAI(id, game, 5000);
+			actor = new Dragon(id);
+		}
 		else if (role.equals("player"))
+		{
 			AI = new PlayerAI(id, game, 5000);
+			actor = new Player(id);
+		}
+		AI.addListener(this);
+
+		System.out.println(this.game);
+
+		// Join game
+		Connect connect = new Connect(id, actor, Point.random());
+		this.game.receiveEvent(connect);
+		this.onAction(connect);
 
 		// Start acting on receive
 		this.game.addListener(this);
@@ -134,6 +173,9 @@ public class BotProgram
 				e.printStackTrace();
 			}
 		}
+
+		System.out.println("Received: " + cause);
+		System.out.println(this.game);
 	}
 
 
@@ -143,12 +185,39 @@ public class BotProgram
 	 * @param args
 	 * @throws RemoteException
 	 * @throws NotBoundException
+	 * @throws OutOfSyncException
 	 */
-	public static void main(String[] args) throws RemoteException, NotBoundException
+	public static void main(String[] args)
+			throws RemoteException, NotBoundException, OutOfSyncException
 	{
 		System.out.println("Starting bot...");
 		BotProgram bot = new BotProgram();
 		bot.run(Role.Player, 1, "rmi://localhost:1100/", 3000);
+	}
+
+
+	/**
+	 * Runs when the AI executes an action
+	 * 
+	 * @param action The action executed. May be null
+	 */
+	@Override
+	public void onAction(Event action)
+	{
+		if (action != null)
+		{
+			try
+			{
+				this.connection.sendEvent(action);
+			}
+			catch (RemoteException | NotBoundException | ServerNotActiveException | OutOfSyncException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.out.println("No longer connected to a server. Restart to continue.");
+				System.exit(1);
+			}
+		}
 	}
 
 }
