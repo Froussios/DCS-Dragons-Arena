@@ -239,10 +239,15 @@ public class Server extends NetworkRessource implements ServerInterface {
      * @throws RemoteException
      * @throws OutOfSyncException
      */
-    private void spreadClients(Event event) throws RemoteException, OutOfSyncException {
+    private void spreadClients(Event event) throws  OutOfSyncException {
         for (Long id : this.clients.keySet()) {
             if (id != event.getIssuer()) {
-                clients.get(id).update(event);
+                try {
+                    clients.get(id).update(event);
+                } catch (RemoteException e) {
+                    this.getLogger().severe("Client " + id + " unable to be reached.");
+                    this.clients.remove(id);
+                }
             }
         }
     }
@@ -276,7 +281,7 @@ public class Server extends NetworkRessource implements ServerInterface {
             System.out.println("sending to : " + key);
             this.lookup(key).transferEvent(event);
             count++;
-        } while (count < window);
+        } while (count < nbServer);
 
         //Send event to watched servers
         for (int serverId : this.watchedServer.keySet()) {
