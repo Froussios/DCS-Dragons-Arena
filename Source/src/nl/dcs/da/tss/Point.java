@@ -4,14 +4,17 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 
 public class Point
-		implements Comparable<Point>
+		implements Comparable<Point>, Serializable
 {
 
+	private static final Random random = new Random();
+	private static final long serialVersionUID = 6181684382275406670L;
 	private final int x, y;
-    private static final long serialVersionUID = 6181684382275406670L;
+
 
 
 	/**
@@ -143,6 +146,17 @@ public class Point
 	public Point shift(int x, int y)
 	{
 		return new Point(this.getX() + x, this.getY() + y);
+	}
+
+
+	/**
+	 * Get a random point inside the 25x25 battlefield.
+	 * 
+	 * @return The randomised point.
+	 */
+	public static Point random()
+	{
+		return new Point(random.nextInt(25), random.nextInt(25));
 	}
 
 

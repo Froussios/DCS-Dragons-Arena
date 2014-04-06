@@ -6,6 +6,10 @@ import nl.dcs.da.tss.Dragon;
 import nl.dcs.da.tss.Player;
 import nl.dcs.da.tss.Point;
 import nl.dcs.da.tss.TSS;
+import nl.dcs.da.tss.events.ActorAttack;
+import nl.dcs.da.tss.events.Event;
+import nl.dcs.da.tss.events.Heal;
+import nl.dcs.da.tss.events.PlayerMove;
 
 
 public class PlayerAI
@@ -26,7 +30,8 @@ public class PlayerAI
 
 
 	@Override
-	protected void makeMove() throws CharacterDeadException
+	protected Event makeMove()
+			throws CharacterDeadException
 	{
 		Point position = this.getLocation();
 
@@ -39,8 +44,8 @@ public class PlayerAI
 			{
 				if (player.getMaxHP() > player.getHP() * 2)
 				{
-					this.heal(player.getID());
-					return;
+					Heal heal = this.heal(player.getID());
+					return heal;
 				}
 			}
 		}
@@ -52,8 +57,8 @@ public class PlayerAI
 			Dragon dragon = this.getBattlefield().getAsDragon(point);
 			if (dragon != null)
 			{
-				this.attack(point);
-				return;
+				ActorAttack attack = this.attack(point);
+				return attack;
 			}
 		}
 
@@ -65,21 +70,23 @@ public class PlayerAI
 			{
 				if (this.getBattlefield().getAsDragon(target) != null)
 				{
+					PlayerMove move = null;
 					if (position.getX() > target.getX())
-						this.move(position.shift(-1, 0));
+						move = this.move(position.shift(-1, 0));
 					else if (position.getX() < target.getX())
-						this.move(position.shift(+1, 0));
+						move = this.move(position.shift(+1, 0));
 					else if (position.getY() > target.getY())
-						this.move(position.shift(0, -1));
+						move = this.move(position.shift(0, -1));
 					else if (position.getY() < target.getY())
-						this.move(position.shift(0, +1));
-					return;
+						move = this.move(position.shift(0, +1));
+					return move;
 				}
 			}
 		}
 
 		// There must be an action taken
 		System.err.println("Player " + getID() + " could not perform an action");
+		return null;
 	}
 
 }

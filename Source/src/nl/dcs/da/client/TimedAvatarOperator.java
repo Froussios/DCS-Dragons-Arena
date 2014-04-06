@@ -1,7 +1,10 @@
 package nl.dcs.da.client;
 
+import java.util.ArrayList;
+
 import nl.dcs.da.tss.State.GameState;
 import nl.dcs.da.tss.TSS;
+import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.util.Alarm;
 import nl.dcs.da.tss.util.Alarm.AlarmRunningException;
 
@@ -17,6 +20,14 @@ public abstract class TimedAvatarOperator
 		extends AvatarOperator
 		implements Alarm.Listener
 {
+
+	public interface ActionListener
+	{
+
+		public void onAction(Event action);
+	}
+
+	private final ArrayList<ActionListener> listeners = new ArrayList<>();
 
 	private final Alarm alarm;
 	private long failtime = 0;
@@ -39,11 +50,24 @@ public abstract class TimedAvatarOperator
 
 
 	/**
+	 * Add a new listener to be notified
+	 * 
+	 * @param listener
+	 */
+	public void addListener(ActionListener listener)
+	{
+		this.listeners.add(listener);
+	}
+
+
+
+	/**
 	 * Start performing actions
 	 * 
 	 * @throws AlarmRunningException
 	 */
-	public void start() throws AlarmRunningException
+	public void start()
+			throws AlarmRunningException
 	{
 		this.alarm.start();
 	}
@@ -52,37 +76,42 @@ public abstract class TimedAvatarOperator
 	/**
 	 * Perform the next move
 	 */
-	protected abstract void makeMove() throws CharacterDeadException;
+	protected abstract Event makeMove()
+			throws CharacterDeadException;
 
 
 	/**
-	 * The function that will be executed asynchronously. 
+	 * The function that will be executed asynchronously.
 	 */
 	@Override
 	public void update(long interval)
 	{
 		// TODO stop trying at gameover
-		
+
 		try
 		{
 			// Make a move if the player is alive and the game is playing
 			if (this.getGame().getPhase().equals(GameState.Playing))
 			{
 				if (this.inGame())
-					makeMove();
+				{
+					Event move = makeMove();
+					for (ActionListener listener : listeners)
+						listener.onAction(move);
+				}
 				else
 					throw new CharacterDeadException();
 			}
 		}
 		catch (CharacterDeadException e)
 		{
-			// Stop trying after it is no longer possible for the game to be revised into the player being alive.
+			// Stop trying after it is no longer possible for the game to be
+			// revised into the player being alive.
 			this.failtime += interval;
 			if (this.failtime >= maxFailtime)
 				this.alarm.stop();
-			
+
 			System.err.println("Character " + getID() + " tried to act while dead. Failtime " + this.failtime);
 		}
-
 	}
 }

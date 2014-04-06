@@ -1,11 +1,11 @@
 package nl.dcs.da.tss;
 
-import nl.dcs.da.tss.events.Event;
-
 import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
+
+import nl.dcs.da.tss.events.Event;
 
 /**
  * An implementation of the Trailing State synchronisation algorithm. The
@@ -69,7 +69,7 @@ public class TSS
 			states.add(state);
 			delays.add(delay);
 
-			System.out.println("Created state@" + state.getClock());
+			// System.out.println("Created state@" + state.getClock());
 		} while (delay <= maxDelay);
 	}
 

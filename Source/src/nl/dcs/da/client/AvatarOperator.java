@@ -72,7 +72,8 @@ public class AvatarOperator
 	 * 
 	 * @throws CharacterDeadException
 	 */
-	protected void enforceAlive() throws CharacterDeadException
+	protected void enforceAlive()
+			throws CharacterDeadException
 	{
 		if (this.inGame())
 			throw new AvatarOperator.CharacterDeadException("Character " + this.getID() + " is dead.");
@@ -86,10 +87,12 @@ public class AvatarOperator
 	 * @throws
 	 * @throws CharacterDeadException
 	 */
-	public void move(Point target) throws CharacterDeadException
+	public PlayerMove move(Point target)
+			throws CharacterDeadException
 	{
 		PlayerMove move = new PlayerMove(game.getSimulationTime(), me, target);
 		submitEvent(move);
+		return move;
 	}
 
 
@@ -100,10 +103,12 @@ public class AvatarOperator
 	 * @throws
 	 * @throws CharacterDeadException
 	 */
-	public void attack(Point target) throws CharacterDeadException
+	public ActorAttack attack(Point target)
+			throws CharacterDeadException
 	{
 		ActorAttack attack = new ActorAttack(game.getSimulationTime(), me, target);
 		submitEvent(attack);
+		return attack;
 	}
 
 
@@ -114,10 +119,12 @@ public class AvatarOperator
 	 * @throws
 	 * @throws CharacterDeadException
 	 */
-	public void heal(long who) throws CharacterDeadException
+	public Heal heal(long who)
+			throws CharacterDeadException
 	{
 		Heal heal = new Heal(game.getSimulationTime(), me, who);
 		submitEvent(heal);
+		return heal;
 	}
 
 
@@ -152,7 +159,8 @@ public class AvatarOperator
 	 * @param event
 	 * @throws CharacterDeadException
 	 */
-	protected void submitEvent(Event event) throws IllegalStateException, CharacterDeadException
+	protected void submitEvent(Event event)
+			throws IllegalStateException, CharacterDeadException
 	{
 		synchronized (this.game)
 		{

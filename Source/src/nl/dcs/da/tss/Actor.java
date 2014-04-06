@@ -1,10 +1,14 @@
 package nl.dcs.da.tss;
 
+import java.io.Serializable;
 import java.util.Random;
 
 
 public abstract class Actor
+		implements Serializable
 {
+
+	private static final long serialVersionUID = 7254105706265658093L;
 
 	// private static IncGenerator idGenerator = new IncGenerator();
 	private static Random random = new Random();

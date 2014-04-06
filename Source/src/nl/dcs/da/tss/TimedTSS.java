@@ -1,5 +1,8 @@
 package nl.dcs.da.tss;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+
 import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.events.StartGame;
 import nl.dcs.da.tss.util.Alarm;
@@ -17,7 +20,7 @@ public class TimedTSS
 		implements Alarm.Listener
 {
 
-	private final Alarm alarm;
+	private transient final Alarm alarm;
 
 
 	/**
@@ -36,7 +39,8 @@ public class TimedTSS
 
 
 	@Override
-	public synchronized boolean receiveEvent(Event event) throws OutOfSyncException
+	public synchronized boolean receiveEvent(Event event)
+			throws OutOfSyncException
 	{
 		// Start clocks
 		if (event instanceof StartGame)
@@ -61,6 +65,13 @@ public class TimedTSS
 	{
 		this.incrementTime(interval);
 
+	}
+
+
+	private void readObject(ObjectInputStream inputStream)
+			throws IOException, ClassNotFoundException
+	{
+		inputStream.defaultReadObject();
 	}
 
 
