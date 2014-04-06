@@ -364,7 +364,10 @@ public class Server
 	{
 		eventBag.add(event);
 		getLogger().fine(event + "\n count : " + eventBag.getCount(event));
-		return eventBag.getCount(event) == 1;
+		boolean fresh = eventBag.getCount(event) == 1;
+		if (fresh)
+			this.state.receiveEvent(event);
+		return fresh;
 	}
 
 
