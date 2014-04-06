@@ -73,9 +73,11 @@ public class EventFilter
 		if (event.getIssuer() != this.client)
 			rejection = "Clients can only control their own character";
 
-		System.out.println("Rejected: " + event + ". Reason: " + rejection);
+		accepted = rejection == null;
 
-		accepted = rejection != null;
+		if (!accepted)
+			System.out.println("Rejected: " + event + ". Reason: " + rejection);
+
 		return accepted;
 	}
 
