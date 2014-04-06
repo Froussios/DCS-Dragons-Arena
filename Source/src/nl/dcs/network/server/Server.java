@@ -51,7 +51,7 @@ public class Server
 	private final HashMap<Integer, Long> watchedServer = new HashMap<>();
 	private final ConcurrentSkipListMap<Integer, String> serverAddress = new ConcurrentSkipListMap<>();
 	private final Integer id;
-	private final TSS state = new TimedTSS(new State(), 5000L);
+	private final TSS state = new TimedTSS(new State(), 60000L);
 	private Integer window = 2;
 
 
