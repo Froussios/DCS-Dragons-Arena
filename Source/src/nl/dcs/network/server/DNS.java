@@ -59,23 +59,5 @@ public class DNS {
     }
 
 
-    public static int getNbServers() {
-        return getInstance().addresses.size();
-    }
 
-    public static void addServer(String address) throws UnknownHostException {
-        try {
-            getInstance().addresses.add(address);
-            lookup(getNbServers() - 1);
-        } catch (RemoteException  | NotBoundException e) {
-            getInstance().addresses.remove(getNbServers() - 1);
-        }
-    }
-
-
-    public static void list() {
-        for (String address : getInstance().addresses) {
-            System.out.println(address);
-        }
-    }
 }

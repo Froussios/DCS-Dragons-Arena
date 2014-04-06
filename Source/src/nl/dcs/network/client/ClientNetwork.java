@@ -25,6 +25,7 @@ public class ClientNetwork
 	private final TSS state;
 	private ServerInterface server;
 	private final long id;
+    private String serverAddress;
 
 
 	public ClientNetwork(TSS state) throws RemoteException
@@ -72,8 +73,14 @@ public class ClientNetwork
         this.server = this.lookup(address);
         TSS state = this.server.register(this.id, this);
         this.state.loadFrom(state);
+
+        if (this.serverAddress == null || this.serverAddress.isEmpty())
+            this.serverAddress = address;
     }
 
+    public void reconnect () throws RemoteException, NotBoundException {
+        this.connect(this.serverAddress);
+    }
 
 	public void disconnect() throws RemoteException
 	{
