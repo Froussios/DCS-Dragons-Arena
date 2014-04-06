@@ -1,4 +1,4 @@
-package nl.dcs.server;
+package nl.dcs.network.server;
 
 import nl.dcs.da.tss.State;
 import nl.dcs.da.tss.TSS;
