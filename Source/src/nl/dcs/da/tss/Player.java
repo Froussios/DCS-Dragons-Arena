@@ -11,6 +11,9 @@ public class Player
 		extends Actor
 {
 
+	private static final long serialVersionUID = -3559965971573899209L;
+
+
 	/**
 	 * Create a new player. The player starts at maximum health.
 	 * 

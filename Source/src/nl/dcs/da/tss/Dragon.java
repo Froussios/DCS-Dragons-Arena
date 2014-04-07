@@ -5,6 +5,9 @@ public class Dragon
 		extends Actor
 {
 
+	private static final long serialVersionUID = 6912138941551712190L;
+
+
 	/**
 	 * Create a new dragon
 	 * 
