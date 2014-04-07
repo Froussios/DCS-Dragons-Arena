@@ -74,7 +74,7 @@ public class BotProgram
 		if (as == null)
 			throw new IllegalArgumentException("Did not specify what to play as.");
 
-		System.out.println("Connecting as " + as + "-" + id + " at server.");
+		System.out.println("Connecting as " + as + "-" + id + " at server." + server);
 
 		// Connect
 		System.out.println("Connecting to server...");
