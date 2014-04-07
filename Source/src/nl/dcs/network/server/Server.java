@@ -372,12 +372,17 @@ public class Server
 	 * 
 	 * @param event the event to add to the bag
 	 * @return true if the event if added for the first time
+	 * @throws OutOfSyncException
 	 */
 	private boolean addToEventBag(Event event)
+			throws OutOfSyncException
 	{
 		eventBag.add(event);
 		getLogger().fine(event + "\n count : " + eventBag.getCount(event));
-		return eventBag.getCount(event) == 1;
+		boolean newEvent = eventBag.getCount(event) == 1;
+		if (newEvent)
+			this.state.receiveEvent(event);
+		return newEvent;
 	}
 
 
