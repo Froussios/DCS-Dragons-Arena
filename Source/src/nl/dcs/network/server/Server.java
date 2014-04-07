@@ -21,7 +21,6 @@ import nl.dcs.da.tss.OutOfSyncException;
 import nl.dcs.da.tss.State;
 import nl.dcs.da.tss.TSS;
 import nl.dcs.da.tss.TimedTSS;
-import nl.dcs.da.tss.events.Connect;
 import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.events.MarkEvent;
 import nl.dcs.da.tss.events.OpenGame;
@@ -487,32 +486,7 @@ public class Server
 	{
 		boolean accepted = true;
 
-		// NOTE: do not reject moves after gameover: gameover might be revised
-		// and the game resumed
-
-		// Event too retrospective
-		if (state.getSimulationTime() - event.getSimulationTime() > maxClientDelay)
-			accepted = false;
-
-		// Event in the future
-		if (state.getSimulationTime() - event.getSimulationTime() < 1000)
-			accepted = false;
-
-		// Game not open or playing
-		if (state.getPhase().equals(State.GameState.Closed))
-			accepted = false;
-
-		// Attempted new connection mid-game
-		if (state.getPhase().equals(State.GameState.Open) && !(event instanceof Connect))
-			accepted = false;
-
-		// Control events are reserved for clients
-		if (event instanceof StartGame || event instanceof OpenGame)
-			accepted = false;
-
-		// Clients can only control their own character
-		if (event.getIssuer() != senderId)
-			accepted = false;
+		accepted = new EventFilter(this.state, senderId).acceptEventFromClient(event);
 
 		if (!clients.containsKey(senderId))
 			accepted = false;
