@@ -20,6 +20,8 @@ public class TimedTSS
 		implements Alarm.Listener
 {
 
+	private static final long serialVersionUID = -7672330556653638658L;
+
 	private transient final Alarm alarm;
 
 

@@ -1,8 +1,8 @@
 package nl.dcs.da.tss;
 
-import nl.dcs.da.tss.events.Event;
-
 import java.io.Serializable;
+
+import nl.dcs.da.tss.events.Event;
 
 
 /**
@@ -16,6 +16,8 @@ public class SynchronizedState
 		extends State
 		implements Battlefield, Serializable
 {
+
+	private static final long serialVersionUID = -653597913325821114L;
 
 	private long clock = Long.MIN_VALUE;
 	private long lastCatchup = Long.MIN_VALUE;
