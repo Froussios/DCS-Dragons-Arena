@@ -167,6 +167,10 @@ public class Server
 						break;
 					case "refresh":
 						server.refresh(input.nextInt());
+						break;
+					case "print":
+						System.out.println(server.state);
+						break;
 					default:
 						System.out.println("Unknown command");
 				}
