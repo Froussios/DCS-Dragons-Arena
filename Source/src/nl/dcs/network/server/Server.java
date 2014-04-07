@@ -299,7 +299,7 @@ public class Server
 	{
 		for (Long id : this.clients.keySet())
 		{
-			if (id != event.getIssuer())
+			// if (id != event.getIssuer())
 			{
 				try
 				{

@@ -45,6 +45,8 @@ public class TimedTSS
 			throws OutOfSyncException
 	{
 		// Start clocks
+		// Since the server has decided that the game starts, we should start
+		// the clocks asap, and resolve consistency later.
 		if (event instanceof StartGame)
 		{
 			try

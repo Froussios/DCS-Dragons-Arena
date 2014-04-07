@@ -25,16 +25,18 @@ public class ClientNetwork
 	private final TSS state;
 	private ServerInterface server;
 	private final long id;
-    private String serverAddress;
+	private String serverAddress;
 
 
-	public ClientNetwork(TSS state) throws RemoteException
+	public ClientNetwork(TSS state)
+			throws RemoteException
 	{
 		this(state, new Random().nextLong());
 	}
 
 
-	public ClientNetwork(TSS state, long id) throws RemoteException
+	public ClientNetwork(TSS state, long id)
+			throws RemoteException
 	{
 		super();
 		this.state = state;
@@ -55,13 +57,17 @@ public class ClientNetwork
 
 
 	@Override
-	public void update(Event e) throws RemoteException, OutOfSyncException
+	public void update(Event e)
+			throws RemoteException, OutOfSyncException
 	{
+		System.out.println("New event from server: " + e);
+
 		this.state.receiveEvent(e);
 	}
 
 
-	public void connect(int i) throws RemoteException, NotBoundException
+	public void connect(int i)
+			throws RemoteException, NotBoundException
 	{
 		this.server = DNS.lookup(i);
 		TSS state = this.server.register(this.id, this);
@@ -69,27 +75,39 @@ public class ClientNetwork
 
 	}
 
-    public void connect (String address) throws RemoteException, NotBoundException{
-        this.server = this.lookup(address);
-        TSS state = this.server.register(this.id, this);
-        this.state.loadFrom(state);
 
-        if (this.serverAddress == null || this.serverAddress.isEmpty())
-            this.serverAddress = address;
-    }
+	public void connect(String address)
+			throws RemoteException, NotBoundException
+	{
+		this.server = this.lookup(address);
+		TSS state = this.server.register(this.id, this);
+		this.state.loadFrom(state);
 
-    public void reconnect () throws RemoteException, NotBoundException {
-        this.connect(this.serverAddress);
-    }
+		if (this.serverAddress == null || this.serverAddress.isEmpty())
+			this.serverAddress = address;
+	}
 
-	public void disconnect() throws RemoteException
+
+	public void reconnect()
+			throws RemoteException, NotBoundException
+	{
+		this.connect(this.serverAddress);
+	}
+
+
+	public void disconnect()
+			throws RemoteException
 	{
 		this.server.unregister(id, this);
 	}
 
 
-	public void sendEvent(Event e) throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
+	public void sendEvent(Event e)
+			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
 	{
 		this.server.sendEvent(id, e);
+
+		System.out.println("New event  to  server: " + e);
+
 	}
 }

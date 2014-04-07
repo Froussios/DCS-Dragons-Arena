@@ -228,13 +228,14 @@ public class BotProgram
 	{
 		if (action != null)
 		{
+			System.out.println("Bot performing action: " + action);
+
 			try
 			{
 				this.connection.sendEvent(action);
 			}
 			catch (RemoteException | NotBoundException | ServerNotActiveException | OutOfSyncException e)
 			{
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				System.out.println("No longer connected to a server. Restart to continue.");
 				System.exit(1);
