@@ -25,6 +25,8 @@ public class TSS
 		implements Battlefield, Serializable
 {
 
+	public static final long RECOMMENDED_MAX_DELAY = 60000;
+
 	private final ArrayDeque<SynchronizedState> states = new ArrayDeque<>();
 	private final ArrayList<Long> delays = new ArrayList<>();
 
@@ -81,7 +83,8 @@ public class TSS
 	 * @param event The event
 	 * @throws OutOfSyncException
 	 */
-	public synchronized boolean receiveEvent(Event event) throws OutOfSyncException
+	public synchronized boolean receiveEvent(Event event)
+			throws OutOfSyncException
 	{
 		// Add event to history
 		boolean acceptedEvent = events.add(event);

@@ -53,7 +53,7 @@ public class BotProgram
 	 */
 	public BotProgram()
 	{
-		this.game = new TimedTSS(new State(), 60000);
+		this.game = new TimedTSS(new State(), TSS.RECOMMENDED_MAX_DELAY);
 		this.game.addListener(this);
 	}
 
