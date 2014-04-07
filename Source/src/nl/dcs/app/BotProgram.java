@@ -177,8 +177,8 @@ public class BotProgram
 			}
 		}
 
-		System.out.println("Received: " + cause);
 		System.out.println(this.game);
+		System.out.println("State change: " + cause);
 	}
 
 
