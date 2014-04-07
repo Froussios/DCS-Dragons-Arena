@@ -74,13 +74,17 @@ public class BotProgram
 		if (as == null)
 			throw new IllegalArgumentException("Did not specify what to play as.");
 
+		System.out.println("Connecting as " + as + "-" + id + " at server.");
+
 		// Connect
+		System.out.println("Connecting to server...");
 		this.connection = new ClientNetwork(game, id);
 		this.connection.connect(server); // Also loads state
 
 		// TODO Get game
 
 		// Create AI
+		System.out.println("Setting up AI...");
 		Actor actor = null;
 		if (as.equals(Role.Dragon))
 		{
@@ -96,9 +100,8 @@ public class BotProgram
 		// Start acting on receive
 		this.game.addListener(this);
 
-		System.out.println("Connected as " + as + "-" + id + " at " + server);
-
 		// Join game
+		System.out.println("Joining game...");
 		Connect connect = new Connect(id, actor, Point.random());
 		this.game.receiveEvent(connect);
 		this.onAction(connect);
@@ -190,9 +193,28 @@ public class BotProgram
 	public static void main(String[] args)
 			throws RemoteException, NotBoundException, OutOfSyncException
 	{
+		long id = 1;
+		String server = "rmi://localhost:1100/";
+		Role role = Role.Player;
+		long frequency = 3000;
+
+		// Parse command-line options
+		for (int i = 0; i < args.length; i++)
+			if (args[i].equals("-id"))
+				id = Long.parseLong(args[++i]);
+			else if (args[i].equals("-server"))
+				server = args[++i];
+			else if (args[i].equals("-role"))
+				role = Role.valueOf(args[++i]);
+			else if (args[i].equals("-freq"))
+				frequency = Long.parseLong(args[++i]);
+			else
+				System.out.println("Ignored unknown option " + args[i]);
+
+		// Start bot
 		System.out.println("Starting bot...");
 		BotProgram bot = new BotProgram();
-		bot.run(Role.Player, 1, "rmi://localhost:1100/", 3000);
+		bot.run(role, id, server, frequency);
 	}
 
 
