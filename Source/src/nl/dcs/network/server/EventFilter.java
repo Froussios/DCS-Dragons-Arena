@@ -47,30 +47,30 @@ public class EventFilter
 		String rejection = null;
 
 		// NOTE: do not reject moves after gameover: gameover might be revised
-		// and the game resumed
+		// and the game resumed.
 
 		// Event too retrospective
 		if (context.getSimulationTime() - event.getSimulationTime() > maxClientDelay)
 			rejection = "Event too retrospective";
 
 		// Event in the future
-		if (context.getSimulationTime() - event.getSimulationTime() < -1000)
+		else if (context.getSimulationTime() - event.getSimulationTime() < -1000)
 			rejection = "Event in the future";
 
 		// Game not open or playing
-		if (context.getPhase().equals(State.GameState.Closed))
+		else if (context.getPhase().equals(State.GameState.Closed))
 			rejection = "Game not open or playing";
 
 		// Attempted new connection mid-game
-		if (context.getPhase().equals(State.GameState.Open) && !(event instanceof Connect))
+		else if (context.getPhase().equals(State.GameState.Open) && !(event instanceof Connect))
 			rejection = "Attempted new connection mid-game";
 
 		// Control events are reserved for clients
-		if (event instanceof StartGame || event instanceof OpenGame)
+		else if (event instanceof StartGame || event instanceof OpenGame)
 			rejection = "Control events are reserved for clients";
 
 		// Clients can only control their own character
-		if (event.getIssuer() != this.client)
+		else if (event.getIssuer() != this.client)
 			rejection = "Clients can only control their own character";
 
 		accepted = rejection == null;
