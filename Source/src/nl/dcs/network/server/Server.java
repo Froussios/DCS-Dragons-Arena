@@ -1,7 +1,6 @@
 package nl.dcs.network.server;
 
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -63,44 +62,6 @@ public class Server
 		this.window = window;
 		this.serverAddress.put(id, this.getRMIAddress());
 	}
-
-
-	/**
-	 * Constructor from string representing the address of the rmi registry
-	 * 
-	 * @param id the identifier in the network
-	 * @param address the rmi address of the server
-	 * @param window the number of server you should contact
-	 * @throws UnknownHostException if the host is not known
-	 * @throws RemoteException @see
-	 *             java.rmi.server.UnicastRemoteObject#UnicastRemoteObject()
-	 * @throws MalformedURLException if the address is not correct
-	 */
-	public Server(int id, String address, int window)
-			throws UnknownHostException, RemoteException, MalformedURLException
-	{
-		super();
-		this.id = id;
-		if (!address.matches(Server.rmiAddressPattern))
-			throw new MalformedURLException();
-		address = address.replace("rmi:", "").replace("/", "");
-		int port = 0;
-		InetAddress ip = InetAddress.getLocalHost();
-		if (address.contains(":"))
-		{
-			String[] subtoken = address.split(":");
-			ip = subtoken[0].isEmpty() ? InetAddress.getLocalHost() : InetAddress.getByName(subtoken[0]);
-			port = subtoken[1].isEmpty() ? 1099 : Integer.parseInt(subtoken[1]);
-		}
-
-		this.port = port;
-		this.window = window;
-		this.serverAddress.put(id, address);
-		String s = new StringBuilder().append("Creation of server object : ").append(this.id).toString();
-		Logger.getLogger(this.getClass().getName()).fine(s);
-		System.out.println(s);
-	}
-
 
 	/**
 	 * Launch the server in wait of event to transfer
@@ -205,7 +166,9 @@ public class Server
 		{
 			throw new IllegalArgumentException();
 		}
-		lookup(i).watch(this.id);
+        ServerInterface contactedServer =  lookup(i);
+        if (contactedServer != null)
+            contactedServer.watch(this.id) ;
 	}
 
 
@@ -291,7 +254,6 @@ public class Server
 	 * Spread an event to the clients known to this server
 	 * 
 	 * @param event The event to be spread
-	 * @throws RemoteException
 	 * @throws OutOfSyncException
 	 */
 	private void spreadClients(Event event)
@@ -310,7 +272,7 @@ public class Server
 					this.getLogger().severe("Client " + id + " unable to be reached.");
 					this.clients.remove(id);
 				}
-			}
+            }
 		}
 	}
 
@@ -348,7 +310,12 @@ public class Server
 				key = this.serverAddress.firstKey();
 			}
 			System.out.println("sending to : " + key);
-			this.lookup(key).transferEvent(event);
+            ServerInterface contactedServer = this.lookup(key);
+            if (contactedServer != null){
+                contactedServer.transferEvent(event);
+            } else {
+                continue;
+            }
 			count++;
 		} while (count < nbServer);
 
@@ -412,7 +379,7 @@ public class Server
 			System.out.println("The address in not in a correct format");
 			return;
 		}
-		if (this.serverAddress.containsKey(id) && this.serverAddress.get(id) == address)
+		if (this.serverAddress.containsKey(id) && this.serverAddress.get(id).equals(address))
 		{
 			System.out.println("The address is already known with the id : " + id);
 			return;
@@ -429,8 +396,11 @@ public class Server
 			try
 			{
 				String a = this.serverAddress.get(i);
+
 				this.lookup(address).putServer(i, a);
-				this.lookup(a).putServer(id, address);
+                ServerInterface contactedServer = this.lookup(a);
+                if (contactedServer != null)
+                    contactedServer.putServer(id, address);
 			}
 			catch (RemoteException e)
 			{
@@ -454,9 +424,8 @@ public class Server
 		}
 		catch (UnknownHostException e)
 		{
-			e.printStackTrace();
+			e.printStackTrace();return null;
 		}
-		return null;
 	}
 
 
@@ -470,8 +439,9 @@ public class Server
 		catch (UnknownHostException e)
 		{
 			e.printStackTrace();
+            return null;
 		}
-		return null;
+
 	}
 
 
@@ -484,9 +454,7 @@ public class Server
 	 */
 	public boolean verifyEvent(Event event, long senderId)
 	{
-		boolean accepted = true;
-
-		accepted = new EventFilter(this.state, senderId).acceptEventFromClient(event);
+		boolean accepted = new EventFilter(this.state, senderId).acceptEventFromClient(event);
 
 		if (!clients.containsKey(senderId))
 			accepted = false;

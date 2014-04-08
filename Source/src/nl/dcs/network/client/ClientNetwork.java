@@ -80,6 +80,9 @@ public class ClientNetwork
 			throws RemoteException, NotBoundException
 	{
 		this.server = this.lookup(address);
+        if (this.server == null){
+            return;
+        }
 		TSS state = this.server.register(this.id, this);
 		this.state.loadFrom(state);
 
