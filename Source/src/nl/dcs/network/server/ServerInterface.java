@@ -8,6 +8,7 @@ package nl.dcs.network.server;
 
 import nl.dcs.da.tss.OutOfSyncException;
 import nl.dcs.da.tss.TSS;
+import nl.dcs.da.tss.TimedTSS;
 import nl.dcs.da.tss.events.Event;
 import nl.dcs.network.client.ClientInterface;
 
@@ -48,7 +49,7 @@ public interface ServerInterface extends Remote {
      * @return
      * @throws RemoteException
      */
-    TSS watch (int id) throws RemoteException;
+    TimedTSS watch (int id) throws RemoteException;
 
 
     /**
