@@ -1,5 +1,6 @@
 package nl.dcs.da.tss;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -22,13 +23,13 @@ import nl.dcs.da.tss.util.StateLogger;
  * 
  */
 public class State
-		implements Battlefield
+		implements Battlefield, Serializable
 {
 
 	/**
 	 * The different phases of a game
 	 */
-	public enum GameState
+	public enum GameState implements  Serializable
 	{
 		Closed, Open, Playing, GameOver
 	}
