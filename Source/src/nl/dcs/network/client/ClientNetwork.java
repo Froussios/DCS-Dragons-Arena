@@ -5,7 +5,9 @@ import java.rmi.RemoteException;
 import java.rmi.server.ServerNotActiveException;
 import java.util.Random;
 
+import nl.dcs.da.tss.EventQueue;
 import nl.dcs.da.tss.OutOfSyncException;
+import nl.dcs.da.tss.SynchronizedState;
 import nl.dcs.da.tss.TSS;
 import nl.dcs.da.tss.events.Event;
 import nl.dcs.network.NetworkRessource;
@@ -44,10 +46,20 @@ public class ClientNetwork
 	}
 
 
-	public void main(String[] args)
+	public static void main(String[] args)
 	{
 
-	}
+        try {
+            ClientNetwork c = new ClientNetwork(new TSS(new SynchronizedState(0, new EventQueue()), TSS.RECOMMENDED_MAX_DELAY));
+            System.out.println(c.getId());
+            c.connect("//:1099/");
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (NotBoundException e) {
+            e.printStackTrace();
+        }
+
+    }
 
 
 	public long getId()
