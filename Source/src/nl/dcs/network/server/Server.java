@@ -8,6 +8,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
 import java.util.HashMap;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.logging.Level;
@@ -50,7 +51,7 @@ public class Server
 	private final HashMap<Integer, Long> watchedServer = new HashMap<>();
 	private final ConcurrentSkipListMap<Integer, String> serverAddress = new ConcurrentSkipListMap<>();
 	private final Integer id;
-	private final TSS state = new TimedTSS(new State(), TSS.RECOMMENDED_MAX_DELAY);
+	private TimedTSS state = new TimedTSS(new State(), TSS.RECOMMENDED_MAX_DELAY);
 	private Integer window = 2;
 
 
@@ -136,7 +137,7 @@ public class Server
 				}
 			}
 		}
-		catch (RemoteException | OutOfSyncException | NotBoundException | ServerNotActiveException ex)
+		catch (RemoteException | OutOfSyncException | NotBoundException | ServerNotActiveException | InputMismatchException ex)
 		{
 			Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
 		}
@@ -162,13 +163,16 @@ public class Server
 	private void refresh(int i)
 			throws RemoteException, NotBoundException
 	{
-		if (i == this.id)
+		if (i == this.id || !this.serverAddress.keySet().contains(i))
 		{
 			throw new IllegalArgumentException();
 		}
         ServerInterface contactedServer =  lookup(i);
-        if (contactedServer != null)
-            contactedServer.watch(this.id) ;
+        if (contactedServer != null) {
+            this.state.loadFrom(contactedServer.watch(this.id));
+        } else {
+            System.out.println("Unable to refresh");
+        }
 	}
 
 
@@ -242,11 +246,11 @@ public class Server
 
 
 	@Override
-	public TSS watch(int id)
+	public TimedTSS watch(int id)
 			throws RemoteException
 	{
 		watchedServer.put(id, this.state.getSimulationTime());
-		return this.state;
+        return this.state;
 	}
 
 
@@ -300,6 +304,8 @@ public class Server
 			this.getLogger().log(Level.SEVERE, message);
 			return;
 		}
+
+        //Send to the nbServer next servers
 		int count = 0;
 		Integer key = this.id;
 		do
@@ -309,7 +315,8 @@ public class Server
 			{
 				key = this.serverAddress.firstKey();
 			}
-			System.out.println("sending to : " + key);
+			System.out.println("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
+
             ServerInterface contactedServer = this.lookup(key);
             if (contactedServer != null){
                 contactedServer.transferEvent(event);
@@ -322,7 +329,7 @@ public class Server
 		// Send event to watched servers
 		for (int serverId : this.watchedServer.keySet())
 		{
-			System.out.println("Sending to " + this.serverAddress.get(serverId));
+			System.out.println("sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
 			Logger.getLogger(this.getClass().getName()).fine("sending to " + serverId);
 			this.lookup(serverId).transferEvent(event);
 			if (event.getSimulationTime() > this.watchedServer.get(serverId) + Server.maxServerWatch)
@@ -357,7 +364,9 @@ public class Server
 			throws RemoteException
 	{
 		this.clients.put(sender, client);
-		return this.state;
+        this.getLogger().fine("New client : " + id);
+        System.out.println("New client : " + id);
+        return this.state;
 	}
 
 
@@ -379,17 +388,9 @@ public class Server
 			System.out.println("The address in not in a correct format");
 			return;
 		}
-		if (this.serverAddress.containsKey(id) && this.serverAddress.get(id).equals(address))
-		{
-			System.out.println("The address is already known with the id : " + id);
-			return;
-		}
-		if (this.serverAddress.containsValue(address))
-		{
-			System.out.println("The address is already known but not with the id : " + id);
-			this.listServer();
-			return;
-		}
+        if (id == this.id) {
+            System.out.println("You can't modify the address of this server");
+        }
 		this.watch(id);
 		for (Integer i : this.serverAddress.keySet())
 		{
