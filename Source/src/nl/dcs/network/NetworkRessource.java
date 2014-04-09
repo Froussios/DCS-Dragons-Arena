@@ -8,6 +8,7 @@ package nl.dcs.network;
 
 import nl.dcs.network.server.ServerInterface;
 
+import java.rmi.ConnectException;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
@@ -36,7 +37,11 @@ public abstract class NetworkRessource extends UnicastRemoteObject {
     public ServerInterface lookup(String s) {
         try {
             return (ServerInterface) Naming.lookup(s + "SERVER");
-        } catch (NotBoundException |RemoteException  e) {
+        } catch (NotBoundException | ConnectException e) {
+            System.out.println("Unable de reach " + s);
+            this.getLogger().severe("Unable de reach " + s);
+            e.printStackTrace();
+        } catch (RemoteException e) {
             System.out.println("Unable de reach " + s);
             this.getLogger().severe("Unable de reach " + s);
             e.printStackTrace();
