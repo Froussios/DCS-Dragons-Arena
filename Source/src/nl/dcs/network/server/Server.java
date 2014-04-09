@@ -260,23 +260,39 @@ public class Server
 	 * @param event The event to be spread
 	 * @throws OutOfSyncException
 	 */
-	private void spreadClients(Event event)
+	private void spreadClients(final Event event)
 			throws OutOfSyncException
 	{
-		for (Long id : this.clients.keySet())
+		for (final Long id : this.clients.keySet())
 		{
-			// if (id != event.getIssuer())
-			{
-				try
-				{
-					clients.get(id).update(event);
-				}
-				catch (RemoteException e)
-				{
-					this.getLogger().severe("Client " + id + " unable to be reached.");
-					this.clients.remove(id);
-				}
-            }
+            Thread t = new Thread(new Runnable() {
+                private Server server;
+                
+                public void run()
+                {
+                    try
+                {
+                    clients.get(id).update(event);
+                }
+                catch (RemoteException e)
+                {
+                    server.getLogger().severe("Client " + id + " unable to be reached.");
+                    server.clients.remove(id);
+                }
+                    catch (OutOfSyncException e){
+                        server.getLogger().severe("Client " + id + " out of sync");
+                    }
+
+                }
+
+                private Runnable init (Server s){
+                    server = s;
+                    return this;
+                }
+            }.init(this));
+
+            t.start();
+
 		}
 	}
 
@@ -364,8 +380,8 @@ public class Server
 			throws RemoteException
 	{
 		this.clients.put(sender, client);
-        this.getLogger().fine("New client : " + id);
-        System.out.println("New client : " + id);
+        this.getLogger().fine("New client : " + sender);
+        System.out.println("New client : " + sender);
         return this.state;
 	}
 
