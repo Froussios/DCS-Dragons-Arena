@@ -49,17 +49,22 @@ public class ClientNetwork
 	public static void main(String[] args)
 	{
 
-        try {
-            ClientNetwork c = new ClientNetwork(new TSS(new SynchronizedState(0, new EventQueue()), TSS.RECOMMENDED_MAX_DELAY));
-            System.out.println(c.getId());
-            c.connect("//:1099/");
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        } catch (NotBoundException e) {
-            e.printStackTrace();
-        }
+		try
+		{
+			ClientNetwork c = new ClientNetwork(new TSS(new SynchronizedState(0, new EventQueue()), TSS.RECOMMENDED_MAX_DELAY));
+			System.out.println(c.getId());
+			c.connect("//:1099/");
+		}
+		catch (RemoteException e)
+		{
+			e.printStackTrace();
+		}
+		catch (NotBoundException e)
+		{
+			e.printStackTrace();
+		}
 
-    }
+	}
 
 
 	public long getId()
@@ -92,9 +97,10 @@ public class ClientNetwork
 			throws RemoteException, NotBoundException
 	{
 		this.server = this.lookup(address);
-        if (this.server == null){
-            return;
-        }
+		if (this.server == null)
+		{
+			return;
+		}
 		TSS state = this.server.register(this.id, this);
 		this.state.loadFrom(state);
 
@@ -120,9 +126,8 @@ public class ClientNetwork
 	public void sendEvent(Event e)
 			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
 	{
-		this.server.sendEvent(id, e);
-
 		System.out.println("New event  to  server: " + e);
 
+		this.server.sendEvent(id, e);
 	}
 }

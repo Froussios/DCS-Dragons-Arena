@@ -187,6 +187,8 @@ public class BotProgram
 			{
 				e.printStackTrace();
 				System.out.println("No longer connected to a server. Restart to continue.");
+				System.out.flush();
+				System.err.flush();
 				System.exit(1);
 			}
 		}

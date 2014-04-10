@@ -7,9 +7,9 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
-import java.util.HashMap;
 import java.util.InputMismatchException;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -47,11 +47,11 @@ public class Server
 
 	private final Integer port;
 	private final TreeBag<Event> eventBag = new TreeBag<>();
-	private final HashMap<Long, ClientInterface> clients = new HashMap<>();
-	private final HashMap<Integer, Long> watchedServer = new HashMap<>();
+	private final ConcurrentHashMap<Long, ClientInterface> clients = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<Integer, Long> watchedServer = new ConcurrentHashMap<>();
 	private final ConcurrentSkipListMap<Integer, String> serverAddress = new ConcurrentSkipListMap<>();
 	private final Integer id;
-	private TimedTSS state = new TimedTSS(new State(), TSS.RECOMMENDED_MAX_DELAY);
+	private final TimedTSS state = new TimedTSS(new State(), TSS.RECOMMENDED_MAX_DELAY);
 	private Integer window = 2;
 
 
@@ -63,6 +63,7 @@ public class Server
 		this.window = window;
 		this.serverAddress.put(id, this.getRMIAddress());
 	}
+
 
 	/**
 	 * Launch the server in wait of event to transfer
@@ -132,6 +133,14 @@ public class Server
 					case "print":
 						System.out.println(server.state);
 						break;
+					case "events":
+						for (Event event : server.state.getEventQueue())
+							System.out.println(event);
+						break;
+					case "bag":
+						for (Event event : server.eventBag.uniqueSet())
+							System.out.println(event);
+						break;
 					default:
 						System.out.println("Unknown command");
 				}
@@ -167,12 +176,15 @@ public class Server
 		{
 			throw new IllegalArgumentException();
 		}
-        ServerInterface contactedServer =  lookup(i);
-        if (contactedServer != null) {
-            this.state.loadFrom(contactedServer.watch(this.id));
-        } else {
-            System.out.println("Unable to refresh");
-        }
+		ServerInterface contactedServer = lookup(i);
+		if (contactedServer != null)
+		{
+			this.state.loadFrom(contactedServer.watch(this.id));
+		}
+		else
+		{
+			System.out.println("Unable to refresh");
+		}
 	}
 
 
@@ -250,7 +262,7 @@ public class Server
 			throws RemoteException
 	{
 		watchedServer.put(id, this.state.getSimulationTime());
-        return this.state;
+		return this.state;
 	}
 
 
@@ -265,17 +277,26 @@ public class Server
 	{
 		for (final Long id : this.clients.keySet())
 		{
-            new Sender(this) {
-                public void run (){
-                    try {
-                        this.server.clients.get(id).update(event);
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    } catch (OutOfSyncException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }.start();
+			new Sender(this)
+			{
+
+				@Override
+				public void run()
+				{
+					try
+					{
+						this.server.clients.get(id).update(event);
+					}
+					catch (RemoteException e)
+					{
+						e.printStackTrace();
+					}
+					catch (OutOfSyncException e)
+					{
+						e.printStackTrace();
+					}
+				}
+			}.start();
 
 		}
 	}
@@ -305,7 +326,7 @@ public class Server
 			return;
 		}
 
-        //Send to the nbServer next servers
+		// Send to the nbServer next servers
 		int count = 0;
 		Integer key = this.id;
 		do
@@ -317,22 +338,32 @@ public class Server
 			}
 			System.out.println("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
 
-            final ServerInterface contactedServer = this.lookup(key);
-            if (contactedServer != null){
-                new Sender(this) {
-                    public void run (){
-                        try {
-                            contactedServer.transferEvent(event);
+			final ServerInterface contactedServer = this.lookup(key);
+			if (contactedServer != null)
+			{
+				new Sender(this)
+				{
 
-                        } catch (RemoteException | OutOfSyncException | ServerNotActiveException | NotBoundException e) {
-                            this.server.getLogger().severe(e + " " + event);
-                        }
-                    }
-                }.start();
+					@Override
+					public void run()
+					{
+						try
+						{
+							contactedServer.transferEvent(event);
 
-            } else {
-                continue;
-            }
+						}
+						catch (RemoteException | OutOfSyncException | ServerNotActiveException | NotBoundException e)
+						{
+							this.server.getLogger().severe(e + " " + event);
+						}
+					}
+				}.start();
+
+			}
+			else
+			{
+				continue;
+			}
 			count++;
 		} while (count < nbServer);
 
@@ -341,16 +372,23 @@ public class Server
 		{
 			System.out.println("sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
 			Logger.getLogger(this.getClass().getName()).fine("sending to " + serverId);
-            new Sender(this) {
-                public void run (){
-                    try {
-                        this.server.lookup(serverId).transferEvent(event);
+			new Sender(this)
+			{
 
-                    }  catch (RemoteException | OutOfSyncException | ServerNotActiveException | NotBoundException e) {
-                       this.server.getLogger().severe(e + " " + event);
-                    }
-                }
-            }.start();
+				@Override
+				public void run()
+				{
+					try
+					{
+						this.server.lookup(serverId).transferEvent(event);
+
+					}
+					catch (RemoteException | OutOfSyncException | ServerNotActiveException | NotBoundException e)
+					{
+						this.server.getLogger().severe(e + " " + event);
+					}
+				}
+			}.start();
 
 			if (event.getSimulationTime() > this.watchedServer.get(serverId) + Server.maxServerWatch)
 			{
@@ -384,9 +422,9 @@ public class Server
 			throws RemoteException
 	{
 		this.clients.put(sender, client);
-        this.getLogger().fine("New client : " + sender);
-        System.out.println("New client : " + sender);
-        return this.state;
+		this.getLogger().fine("New client : " + sender);
+		System.out.println("New client : " + sender);
+		return this.state;
 	}
 
 
@@ -408,9 +446,10 @@ public class Server
 			System.out.println("The address in not in a correct format");
 			return;
 		}
-        if (id == this.id) {
-            System.out.println("You can't modify the address of this server");
-        }
+		if (id == this.id)
+		{
+			System.out.println("You can't modify the address of this server");
+		}
 		this.watch(id);
 		for (Integer i : this.serverAddress.keySet())
 		{
@@ -419,9 +458,9 @@ public class Server
 				String a = this.serverAddress.get(i);
 
 				this.lookup(address).putServer(i, a);
-                ServerInterface contactedServer = this.lookup(a);
-                if (contactedServer != null)
-                    contactedServer.putServer(id, address);
+				ServerInterface contactedServer = this.lookup(a);
+				if (contactedServer != null)
+					contactedServer.putServer(id, address);
 			}
 			catch (RemoteException e)
 			{
@@ -445,7 +484,8 @@ public class Server
 		}
 		catch (UnknownHostException e)
 		{
-			e.printStackTrace();return null;
+			e.printStackTrace();
+			return null;
 		}
 	}
 
@@ -460,7 +500,7 @@ public class Server
 		catch (UnknownHostException e)
 		{
 			e.printStackTrace();
-            return null;
+			return null;
 		}
 
 	}
