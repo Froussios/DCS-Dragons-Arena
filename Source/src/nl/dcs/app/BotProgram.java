@@ -74,7 +74,7 @@ public class BotProgram
 		if (as == null)
 			throw new IllegalArgumentException("Did not specify what to play as.");
 
-		System.out.println("Connecting as " + as + "-" + id + " at server." + server);
+		System.out.println("Connecting as " + as + "-" + id + " at server " + server);
 
 		// Connect
 		System.out.println("Connecting to server...");
@@ -98,7 +98,7 @@ public class BotProgram
 		}
 
 		// Start acting on receive
-		this.game.addListener(this);
+		this.AI.addListener(this);
 
 		// Join game
 		System.out.println("Joining game...");
@@ -160,28 +160,6 @@ public class BotProgram
 	}
 
 
-	@Override
-	public void onStateChanged(Object cause)
-	{
-		if (cause instanceof StartGame)
-		{
-			// TODO this can happen twice, i.e. when recovering in TSS
-			try
-			{
-				this.AI.start();
-			}
-			catch (AlarmRunningException e)
-			{
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-
-		System.out.println(this.game);
-		System.out.println("State change: " + cause);
-	}
-
-
 	/**
 	 * Run an interactive client
 	 * 
@@ -215,6 +193,29 @@ public class BotProgram
 		System.out.println("Starting bot...");
 		BotProgram bot = new BotProgram();
 		bot.run(role, id, server, frequency);
+		System.out.println("Starting command-line input");
+		bot.new Monitor().start();
+	}
+
+
+	@Override
+	public void onStateChanged(Object cause)
+	{
+		if (cause instanceof StartGame)
+		{
+			// TODO this can happen twice, i.e. when recovering in TSS
+			try
+			{
+				this.AI.start();
+			}
+			catch (AlarmRunningException e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		// System.out.println(this.game);
+		System.out.println("State change: " + cause);
 	}
 
 
@@ -239,6 +240,48 @@ public class BotProgram
 				e.printStackTrace();
 				System.out.println("No longer connected to a server. Restart to continue.");
 				System.exit(1);
+			}
+		}
+	}
+
+	/**
+	 * Asynchronous command-line reader for debugging
+	 * 
+	 * @author Chris
+	 * 
+	 */
+	class Monitor
+			extends Thread
+	{
+
+		private final Scanner scanner = new Scanner(System.in);
+
+
+		@Override
+		public void run()
+		{
+			System.out.println("Interactive command-line started");
+			while (true)
+			{
+				String command = scanner.next().toLowerCase();
+				switch (command)
+				{
+					case "print":
+					{
+						System.out.println(game);
+						break;
+					}
+					case "events":
+					{
+						for (Event event : game.getEventQueue())
+							System.out.println(event);
+						break;
+					}
+					default:
+					{
+						System.out.println("Learn to type");
+					}
+				}
 			}
 		}
 	}
