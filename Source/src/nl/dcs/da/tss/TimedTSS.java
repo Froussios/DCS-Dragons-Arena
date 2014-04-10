@@ -52,6 +52,7 @@ public class TimedTSS
 			try
 			{
 				this.alarm.start();
+				System.out.println("Game timer started.");
 			}
 			catch (AlarmRunningException e)
 			{
