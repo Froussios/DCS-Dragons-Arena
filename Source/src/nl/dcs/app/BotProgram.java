@@ -108,58 +108,6 @@ public class BotProgram
 	}
 
 
-	public void runIteractive()
-			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
-	{
-		Scanner scanner = new Scanner(System.in);
-
-		System.out.print("<id> <role>: ");
-		long id = scanner.nextLong();
-		String role = scanner.next().toLowerCase();
-
-		// TODO Connect
-		while (true)
-		{
-			try
-			{
-				System.out.print("Enter the server : ");
-				String serverAddress = scanner.next();
-				this.connection = new ClientNetwork(game, id);
-				this.connection.connect(serverAddress); // Also loads game
-				break;
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
-
-		// TODO Create AI
-		Actor actor = null;
-		if (role.equals("dragon"))
-		{
-			AI = new DragonAI(id, game, 5000);
-			actor = new Dragon(id);
-		}
-		else if (role.equals("player"))
-		{
-			AI = new PlayerAI(id, game, 5000);
-			actor = new Player(id);
-		}
-		AI.addListener(this);
-
-		System.out.println(this.game);
-
-		// Join game
-		Connect connect = new Connect(id, actor, Point.random());
-		this.game.receiveEvent(connect);
-		this.onAction(connect);
-
-		// Start acting on receive
-		this.game.addListener(this);
-	}
-
-
 	/**
 	 * Run an interactive client
 	 * 
