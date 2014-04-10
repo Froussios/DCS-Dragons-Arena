@@ -265,33 +265,17 @@ public class Server
 	{
 		for (final Long id : this.clients.keySet())
 		{
-            Thread t = new Thread(new Runnable() {
-                private Server server;
-                
-                public void run()
-                {
-                    try
-                {
-                    clients.get(id).update(event);
-                }
-                catch (RemoteException e)
-                {
-                    server.getLogger().severe("Client " + id + " unable to be reached.");
-                    server.clients.remove(id);
-                }
-                    catch (OutOfSyncException e){
-                        server.getLogger().severe("Client " + id + " out of sync");
+            new Sender(this) {
+                public void run (){
+                    try {
+                        this.server.clients.get(id).update(event);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    } catch (OutOfSyncException e) {
+                        e.printStackTrace();
                     }
-
                 }
-
-                private Runnable init (Server s){
-                    server = s;
-                    return this;
-                }
-            }.init(this));
-
-            t.start();
+            }.start();
 
 		}
 	}
@@ -310,7 +294,7 @@ public class Server
 	 * @throws ServerNotActiveException
 	 * @throws OutOfSyncException
 	 */
-	private void spreadServers(Event event, int nbServer)
+	private void spreadServers(final Event event, int nbServer)
 			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
 	{
 		if (this.window > this.serverAddress.keySet().size())
@@ -333,9 +317,19 @@ public class Server
 			}
 			System.out.println("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
 
-            ServerInterface contactedServer = this.lookup(key);
+            final ServerInterface contactedServer = this.lookup(key);
             if (contactedServer != null){
-                contactedServer.transferEvent(event);
+                new Sender(this) {
+                    public void run (){
+                        try {
+                            contactedServer.transferEvent(event);
+
+                        } catch (RemoteException | OutOfSyncException | ServerNotActiveException | NotBoundException e) {
+                            this.server.getLogger().severe(e + " " + event);
+                        }
+                    }
+                }.start();
+
             } else {
                 continue;
             }
@@ -343,11 +337,21 @@ public class Server
 		} while (count < nbServer);
 
 		// Send event to watched servers
-		for (int serverId : this.watchedServer.keySet())
+		for (final Integer serverId : this.watchedServer.keySet())
 		{
 			System.out.println("sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
 			Logger.getLogger(this.getClass().getName()).fine("sending to " + serverId);
-			this.lookup(serverId).transferEvent(event);
+            new Sender(this) {
+                public void run (){
+                    try {
+                        this.server.lookup(serverId).transferEvent(event);
+
+                    }  catch (RemoteException | OutOfSyncException | ServerNotActiveException | NotBoundException e) {
+                       this.server.getLogger().severe(e + " " + event);
+                    }
+                }
+            }.start();
+
 			if (event.getSimulationTime() > this.watchedServer.get(serverId) + Server.maxServerWatch)
 			{
 				this.watchedServer.remove(serverId);
