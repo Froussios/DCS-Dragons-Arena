@@ -275,7 +275,14 @@ public class Server
 	private void spreadClients(final Event event)
 			throws OutOfSyncException
 	{
-		for (final Long id : this.clients.keySet())
+		// Take snapshot to prevent concurrent modifications
+		Long[] clientsSnapshot = new Long[0];
+		synchronized (this.clients)
+		{
+			clientsSnapshot = this.clients.keySet().toArray(clientsSnapshot);
+		}
+
+		for (final Long id : clientsSnapshot)
 		{
 			new Sender(this)
 			{
@@ -368,7 +375,12 @@ public class Server
 		} while (count < nbServer);
 
 		// Send event to watched servers
-		for (final Integer serverId : this.watchedServer.keySet())
+		Integer[] watchedServers_Snapshot = new Integer[0];
+		synchronized (this.watchedServer)
+		{
+			watchedServers_Snapshot = this.watchedServer.keySet().toArray(watchedServers_Snapshot);
+		}
+		for (final Integer serverId : watchedServers_Snapshot)
 		{
 			System.out.println("sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
 			Logger.getLogger(this.getClass().getName()).fine("sending to " + serverId);
@@ -408,12 +420,15 @@ public class Server
 	private boolean addToEventBag(Event event)
 			throws OutOfSyncException
 	{
-		eventBag.add(event);
-		getLogger().fine(event + "\n count : " + eventBag.getCount(event));
-		boolean newEvent = eventBag.getCount(event) == 1;
-		if (newEvent)
-			this.state.receiveEvent(event);
-		return newEvent;
+		synchronized (this.eventBag)
+		{
+			this.eventBag.add(event);
+			getLogger().fine(event + "\n count : " + this.eventBag.getCount(event));
+			boolean newEvent = this.eventBag.getCount(event) == 1;
+			if (newEvent)
+				this.state.receiveEvent(event);
+			return newEvent;
+		}
 	}
 
 
