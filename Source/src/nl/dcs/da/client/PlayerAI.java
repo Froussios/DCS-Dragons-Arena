@@ -85,7 +85,7 @@ public class PlayerAI
 		}
 
 		// There must be an action taken
-		System.err.println("Player " + getID() + " could not perform an action");
+		System.out.println("Player " + getID() + " could not perform an action");
 		return null;
 	}
 

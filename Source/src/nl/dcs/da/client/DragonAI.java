@@ -55,7 +55,7 @@ public class DragonAI
 		}
 
 		// There must be an action taken
-		System.err.println("Dragon " + getID() + " could not perform an action");
+		System.out.println("Dragon " + getID() + " could not perform an action");
 		return null;
 
 	}
