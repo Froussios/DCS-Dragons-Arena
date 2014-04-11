@@ -2,6 +2,7 @@ package nl.dcs.da.tss;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +42,9 @@ public class State
 	private final Actor[][] battlefield = new Actor[25][25];
 	private final List<Listener> listeners = new ArrayList<>();
 	private final StateLogger history = new StateLogger();
+
+	private final HashMap<Long, Point> players = new HashMap<>();
+	private final HashMap<Long, Point> dragons = new HashMap<>();
 
 
 	/**
@@ -156,7 +160,9 @@ public class State
 			if (this.get(preferredLocation) == null)
 			{
 				// Position player at their preferred location
-				this.set(preferredLocation, actor);
+
+				// this.set(preferredLocation, actor);
+				this.putActor(actor, preferredLocation);
 			}
 			else
 			{
@@ -174,7 +180,9 @@ public class State
 					if (spot != null)
 					{
 						// Take this spot
-						this.set(spot, actor);
+
+						// this.set(spot, actor);
+						this.putActor(actor, spot);
 					}
 					else
 					{
@@ -260,8 +268,10 @@ public class State
 		else
 		{
 			// Execute event
-			this.set(current, null);
-			this.set(target, player);
+
+			// this.set(current, null);
+			// this.set(target, player);
+			this.moveActor(player, target);
 
 			history.log(move);
 
@@ -323,11 +333,11 @@ public class State
 			// Remove victim if dead
 			if (victim.getHP() <= 0)
 			{
-				this.set(target, null);
+				this.clearActor(victim.getID());
 				history.log(victim, "died");
 			}
 
-			// Check if all the dragons are dead
+			// Check if game is over
 			if (this.detectGameover())
 				this.phase = GameState.GameOver;
 
@@ -391,19 +401,28 @@ public class State
 	/**
 	 * Find the location of an actor
 	 * 
-	 * @param actor The id of the actor
+	 * @param actorId The id of the actor
 	 * @return The location of the actor
 	 */
 	@Override
-	public synchronized Point findActor(long actor)
+	public synchronized Point findActor(long actorId)
 	{
 		// TODO optimise
-		for (int x = 0; x < battlefield.length; x++)
-			for (int y = 0; y < battlefield[x].length; y++)
-				if (battlefield[x][y] != null)
-					if (battlefield[x][y].equals(actor))
-						return new Point(x, y);
-		return null;
+
+		Point position = null;
+		if (position == null)
+			position = this.players.get(actorId);
+		if (position == null)
+			position = this.dragons.get(actorId);
+
+		return position;
+
+		// for (int x = 0; x < battlefield.length; x++)
+		// for (int y = 0; y < battlefield[x].length; y++)
+		// if (battlefield[x][y] != null)
+		// if (battlefield[x][y].equals(actor))
+		// return new Point(x, y);
+		// return;
 	}
 
 
@@ -454,10 +473,12 @@ public class State
 	 * @param value The element
 	 * @return The new value at the location
 	 */
+	@Deprecated
 	public synchronized Actor set(Point target, Actor value)
 	{
 		return this.battlefield[target.getX()][target.getY()] = value;
 	}
+
 
 
 	/**
@@ -470,6 +491,57 @@ public class State
 			throw new IllegalArgumentException();
 
 		return get(point.getX(), point.getY());
+	}
+
+
+	/**
+	 * Removes the actor from the battlefield.
+	 * 
+	 * @param id The actor's id
+	 * @return True, if an actor with the specified id was found and removed.
+	 */
+	private synchronized boolean clearActor(long id)
+	{
+		Point location = this.findActor(id);
+
+		if (location == null)
+			return false;
+
+		this.set(location, null);
+		this.dragons.remove(id);
+		this.players.remove(id);
+
+		return true;
+	}
+
+
+	/**
+	 * Set the location of the actor object. Does not clear the actor's previous
+	 * location.
+	 * 
+	 * @param actor
+	 * @param position
+	 */
+	private synchronized void putActor(Actor actor, Point position)
+	{
+		this.set(position, actor);
+		if (actor instanceof Dragon)
+			this.dragons.put(actor.getID(), position);
+		else if (actor instanceof Player)
+			this.players.put(actor.getID(), position);
+	}
+
+
+	/**
+	 * Remove actor from its previous location and add to a new location.
+	 * 
+	 * @param actor The actor to be moved
+	 * @param newLocation The actor's new location
+	 */
+	private synchronized void moveActor(Actor actor, Point newLocation)
+	{
+		this.clearActor(actor.getID());
+		this.putActor(actor, newLocation);
 	}
 
 
@@ -517,18 +589,22 @@ public class State
 	@Override
 	public synchronized State clone()
 	{
+		// State clone = new State();
+		// for (int x = 0; x < size; x++)
+		// for (int y = 0; y < size; y++)
+		// {
+		// Point point = new Point(x, y);
+		// Actor value = get(point);
+		// if (value != null)
+		// value = value.clone();
+		// clone.set(point, value);
+		// }
+		// clone.history.addAll(this.history);
+		// clone.phase = this.phase;
+
 		State clone = new State();
-		for (int x = 0; x < size; x++)
-			for (int y = 0; y < size; y++)
-			{
-				Point point = new Point(x, y);
-				Actor value = get(point);
-				if (value != null)
-					value = value.clone();
-				clone.set(point, value);
-			}
-		clone.history.addAll(this.history);
-		clone.phase = this.phase;
+		clone.loadFrom(this);
+
 		return clone;
 	}
 
@@ -556,6 +632,11 @@ public class State
 		this.history.addAll(other.history);
 
 		this.phase = other.phase;
+
+		this.players.clear();
+		this.dragons.clear();
+		this.players.putAll(other.players);
+		this.dragons.putAll(other.dragons);
 
 		this.onChanged("Loaded from previous state");
 	}
@@ -606,7 +687,7 @@ public class State
 	 * Human-readable representation of this state's map.
 	 */
 	@Override
-	public String toString()
+	public synchronized String toString()
 	{
 		String rv = this.getPhase() + "\n";
 		for (int y = 0; y < 25; y++)
