@@ -29,6 +29,8 @@ import nl.dcs.network.NetworkRessource;
 import nl.dcs.network.client.ClientInterface;
 
 import org.apache.commons.collections4.bag.TreeBag;
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
 
 /**
  * @author Ivanis
@@ -229,6 +231,8 @@ public class Server
 	public void sendEvent(long sender, Event event)
 			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
 	{
+		// System.out.println("Received " + event + " - Pr");
+		DateTime start = new DateTime();
 		if (this.verifyEvent(event, sender))
 		{
 			if (this.addToEventBag(event))
@@ -237,7 +241,8 @@ public class Server
 				spreadClients(event);
 			}
 		}
-
+		DateTime end = new DateTime();
+		System.out.println("Processed " + event + " in " + new Duration(start, end));
 	}
 
 
@@ -276,13 +281,13 @@ public class Server
 			throws OutOfSyncException
 	{
 		// Take snapshot to prevent concurrent modifications
-		Long[] clientsSnapshot = new Long[0];
+		Long[] clients_Snapshot = new Long[0];
 		synchronized (this.clients)
 		{
-			clientsSnapshot = this.clients.keySet().toArray(clientsSnapshot);
+			clients_Snapshot = this.clients.keySet().toArray(clients_Snapshot);
 		}
 
-		for (final Long id : clientsSnapshot)
+		for (final Long id : clients_Snapshot)
 		{
 			new Sender(this)
 			{
@@ -294,11 +299,7 @@ public class Server
 					{
 						this.server.clients.get(id).update(event);
 					}
-					catch (RemoteException e)
-					{
-						e.printStackTrace();
-					}
-					catch (OutOfSyncException e)
+					catch (RemoteException | OutOfSyncException e)
 					{
 						e.printStackTrace();
 					}
