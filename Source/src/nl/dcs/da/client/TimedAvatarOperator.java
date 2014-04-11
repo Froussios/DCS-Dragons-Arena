@@ -31,7 +31,7 @@ public abstract class TimedAvatarOperator
 
 	private final Alarm alarm;
 	private long failtime = 0;
-	private static final long maxFailtime = 2;
+	private static final long maxFailtime = TSS.RECOMMENDED_MAX_DELAY;
 
 
 	/**
@@ -111,7 +111,7 @@ public abstract class TimedAvatarOperator
 			if (this.failtime >= maxFailtime)
 				this.alarm.stop();
 
-			System.err.println("Character " + getID() + " tried to act while dead. Failtime " + this.failtime);
+			System.out.println("Character " + getID() + " tried to act while dead. Failtime " + this.failtime + "/" + maxFailtime);
 		}
 	}
 }

@@ -29,7 +29,7 @@ public class State
 	/**
 	 * The different phases of a game
 	 */
-	public enum GameState implements  Serializable
+	public enum GameState implements Serializable
 	{
 		Closed, Open, Playing, GameOver
 	}
@@ -485,16 +485,26 @@ public class State
 
 	/**
 	 * Checks if the game is over. The game is over when there are no more
-	 * dragons left. Does not check if the game phase is up to date.
+	 * dragons or no more players left. Does not check if the game phase is up
+	 * to date.
 	 * 
 	 * @return true, if the game is over.
 	 */
 	protected synchronized boolean detectGameover()
 	{
+		boolean thereBeDragons = false;
+		boolean thereBePlayers = false;
 		for (Point point : this)
 		{
 			Dragon dragon = this.getAsDragon(point);
 			if (dragon != null)
+				thereBeDragons = true;
+
+			Player player = this.getAsPlayer(point);
+			if (player != null)
+				thereBePlayers = true;
+
+			if (thereBeDragons && thereBePlayers)
 				return false;
 		}
 		return true;
