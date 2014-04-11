@@ -29,8 +29,6 @@ import nl.dcs.network.NetworkRessource;
 import nl.dcs.network.client.ClientInterface;
 
 import org.apache.commons.collections4.bag.TreeBag;
-import org.joda.time.DateTime;
-import org.joda.time.Duration;
 
 /**
  * @author Ivanis
@@ -232,7 +230,7 @@ public class Server
 			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
 	{
 		// System.out.println("Received " + event + " - Pr");
-		DateTime start = new DateTime();
+		Long start = System.currentTimeMillis();
 		if (this.verifyEvent(event, sender))
 		{
 			if (this.addToEventBag(event))
@@ -241,8 +239,8 @@ public class Server
 				spreadClients(event);
 			}
 		}
-		DateTime end = new DateTime();
-		System.out.println("Processed " + event + " in " + new Duration(start, end));
+		Long end = System.currentTimeMillis();
+		System.out.println("Processed " + event + " in " + (end - start) + "ms");
 	}
 
 
