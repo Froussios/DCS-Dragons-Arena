@@ -40,6 +40,17 @@ public class TimedTSS
 	}
 
 
+	/**
+	 * Create a new TSS instance
+	 * 
+	 * @param maxDelay The maximum delay for a late event
+	 */
+	public TimedTSS(long maxDelay)
+	{
+		this(new State(), maxDelay);
+	}
+
+
 	@Override
 	public synchronized boolean receiveEvent(Event event)
 			throws OutOfSyncException

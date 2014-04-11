@@ -18,7 +18,6 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import nl.dcs.da.tss.OutOfSyncException;
-import nl.dcs.da.tss.State;
 import nl.dcs.da.tss.TSS;
 import nl.dcs.da.tss.TimedTSS;
 import nl.dcs.da.tss.events.Event;
@@ -37,7 +36,7 @@ import org.apache.commons.collections4.bag.TreeBag;
 
 public class Server
 		extends NetworkRessource
-		implements ServerInterface
+		implements ServerInterface, TSS.Listener
 {
 
 	private static final long serialVersionUID = 5446617274331655787L;
@@ -51,7 +50,7 @@ public class Server
 	private final ConcurrentHashMap<Integer, Long> watchedServer = new ConcurrentHashMap<>();
 	private final ConcurrentSkipListMap<Integer, String> serverAddress = new ConcurrentSkipListMap<>();
 	private final Integer id;
-	private final TimedTSS state = new TimedTSS(new State(), TSS.RECOMMENDED_MAX_DELAY);
+	private final TimedTSS state = new TimedTSS(TSS.RECOMMENDED_MAX_DELAY);
 	private Integer window = 2;
 
 
@@ -62,6 +61,8 @@ public class Server
 		this.id = id;
 		this.window = window;
 		this.serverAddress.put(id, this.getRMIAddress());
+
+		this.state.addListener(this);
 	}
 
 
@@ -229,7 +230,6 @@ public class Server
 	public void sendEvent(long sender, Event event)
 			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
 	{
-		// System.out.println("Received " + event + " - Pr");
 		Long start = System.currentTimeMillis();
 		if (this.verifyEvent(event, sender))
 		{
@@ -540,6 +540,25 @@ public class Server
 	public ServerInterface lookup(int id)
 	{
 		return this.lookup(this.serverAddress.get(id));
+	}
+
+
+	/**
+	 * Monitor game events
+	 */
+	@Override
+	public void onStateChanged(Object cause)
+	{
+	}
+
+
+	/**
+	 * Monitor gameover
+	 */
+	@Override
+	public void onGameOver()
+	{
+		System.out.println("Game is over. The server can now be closed.");
 	}
 
 

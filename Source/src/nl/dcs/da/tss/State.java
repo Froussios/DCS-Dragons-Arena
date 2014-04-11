@@ -342,7 +342,11 @@ public class State
 				this.phase = GameState.GameOver;
 
 			// Notify listeners
-			onChanged(attack);
+			this.onChanged(attack);
+
+			// Notify that game is over
+			if (this.phase.equals(GameState.GameOver))
+				this.onChanged("Gameover");
 		}
 	}
 

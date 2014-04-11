@@ -22,11 +22,22 @@ import nl.dcs.da.tss.events.Event;
  * 
  */
 public class TSS
-		implements Battlefield, Serializable
+		implements Battlefield, Battlefield.Listener, Serializable
 {
+
+	private static final long serialVersionUID = 176075649584945519L;
+
+
+	public static interface Listener
+			extends Battlefield.Listener
+	{
+
+		public void onGameOver();
+	}
 
 	public static final long RECOMMENDED_MAX_DELAY = 60000;
 
+	private final ArrayList<Listener> listeners = new ArrayList<>();
 	private final ArrayDeque<SynchronizedState> states = new ArrayDeque<>();
 	private final ArrayList<Long> delays = new ArrayList<>();
 
@@ -73,6 +84,9 @@ public class TSS
 
 			// System.out.println("Created state@" + state.getClock());
 		} while (delay <= maxDelay);
+
+		// Listen on last state for gameover
+		this.getLastState().addListener(this);
 	}
 
 
@@ -266,9 +280,30 @@ public class TSS
 	 * Add a listener for changes in the leading state.
 	 */
 	@Override
-	public synchronized void addListener(Listener listener)
+	public synchronized void addListener(Battlefield.Listener listener)
 	{
+		// Feed listeners directly from leading state
 		getLeadingState().addListener(listener);
+
+		// Listener wishes to receive special TSS notifications
+		if (listener instanceof TSS.Listener)
+			this.listeners.add((TSS.Listener) listener);
+	}
+
+
+	/**
+	 * This runs when the last state changes.
+	 */
+	@Override
+	public void onStateChanged(Object cause)
+	{
+		if (cause.equals("Gameover"))
+		{
+			for (TSS.Listener listener : listeners)
+			{
+				listener.onGameOver();
+			}
+		}
 	}
 
 

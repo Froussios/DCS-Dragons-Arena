@@ -10,7 +10,6 @@ import nl.dcs.da.client.PlayerAI;
 import nl.dcs.da.client.TimedAvatarOperator;
 import nl.dcs.da.client.TimedAvatarOperator.ActionListener;
 import nl.dcs.da.tss.Actor;
-import nl.dcs.da.tss.Battlefield;
 import nl.dcs.da.tss.Dragon;
 import nl.dcs.da.tss.OutOfSyncException;
 import nl.dcs.da.tss.Player;
@@ -26,7 +25,7 @@ import nl.dcs.network.client.ClientNetwork;
 
 
 public class BotProgram
-		implements Battlefield.Listener, ActionListener
+		implements TSS.Listener, ActionListener
 {
 
 	/**
@@ -194,6 +193,7 @@ public class BotProgram
 		}
 	}
 
+
 	/**
 	 * Asynchronous command-line reader for debugging
 	 * 
@@ -234,6 +234,14 @@ public class BotProgram
 				}
 			}
 		}
+	}
+
+
+	@Override
+	public void onGameOver()
+	{
+		System.out.println("Game is over.");
+		System.exit(0);
 	}
 
 }
