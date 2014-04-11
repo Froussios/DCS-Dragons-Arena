@@ -65,18 +65,6 @@ public class TimedTSS
 	}
 
 
-	/**
-	 * Returns true if the game is over, with no possibility of it being revised
-	 * with future events.
-	 * 
-	 * @return
-	 */
-	public synchronized boolean gameOver()
-	{
-		return this.getLastState().getPhase().equals(State.GameState.GameOver);
-	}
-
-
 	@Override
 	public void update(long interval)
 	{

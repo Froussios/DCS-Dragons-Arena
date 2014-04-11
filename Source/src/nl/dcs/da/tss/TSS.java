@@ -77,6 +77,18 @@ public class TSS
 
 
 	/**
+	 * Create a new TSS synchronisation component
+	 * 
+	 * @param maxDelay Upon receipt of event that are older than maxDelay, an
+	 *            OutOfSyncException may be thrown
+	 */
+	public TSS(long maxDelay)
+	{
+		this(new State(), maxDelay);
+	}
+
+
+	/**
 	 * Receive event. The event may be either local or from the network. Local
 	 * logs and states will be updated accordingly.
 	 * 
@@ -235,6 +247,18 @@ public class TSS
 	public synchronized State.GameState getPhase()
 	{
 		return getLeadingState().getPhase();
+	}
+
+
+	/**
+	 * Returns true if the game is over, with no possibility of it being revised
+	 * with future events.
+	 * 
+	 * @return
+	 */
+	public synchronized boolean gameOver()
+	{
+		return this.getLastState().getPhase().equals(State.GameState.GameOver);
 	}
 
 
