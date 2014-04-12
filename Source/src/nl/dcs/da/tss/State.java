@@ -411,8 +411,6 @@ public class State
 	@Override
 	public synchronized Point findActor(long actorId)
 	{
-		// TODO optimise
-
 		Point position = null;
 		if (position == null)
 			position = this.players.get(actorId);

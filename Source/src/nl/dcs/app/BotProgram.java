@@ -43,6 +43,7 @@ public class BotProgram
 	private final TSS game; // Keep final
 	private ClientNetwork connection;
 	private TimedAvatarOperator AI;
+	private boolean running = true;
 
 
 	/**
@@ -79,8 +80,6 @@ public class BotProgram
 		System.out.println("Connecting to server...");
 		this.connection = new ClientNetwork(game, id);
 		this.connection.connect(server); // Also loads state
-
-		// TODO Get game
 
 		// Create AI
 		System.out.println("Setting up AI...");
@@ -188,6 +187,7 @@ public class BotProgram
 				System.out.println("No longer connected to a server. Restart to continue.");
 				System.out.flush();
 				System.err.flush();
+				this.running = false;
 				System.exit(1);
 			}
 		}
@@ -211,7 +211,7 @@ public class BotProgram
 		public void run()
 		{
 			System.out.println("Interactive command-line started");
-			while (true)
+			while (running)
 			{
 				String command = scanner.next().toLowerCase();
 				switch (command)
@@ -233,6 +233,7 @@ public class BotProgram
 					}
 				}
 			}
+			System.out.println("Command-line closed.");
 		}
 	}
 
