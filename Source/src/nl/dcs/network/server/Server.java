@@ -562,4 +562,11 @@ public class Server
 	}
 
 
+	@Override
+	public void ping()
+	{
+		// Return immediately
+	}
+
+
 }
