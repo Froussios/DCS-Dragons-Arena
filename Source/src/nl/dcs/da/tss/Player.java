@@ -69,4 +69,11 @@ public class Player
 	{
 		return "[Player#" + getID() + " HP:" + getHP() + "/" + getMaxHP() + " AP:" + getAP() + "]";
 	}
+
+
+	@Override
+	public String toString()
+	{
+		return "Player#" + getID();
+	}
 }

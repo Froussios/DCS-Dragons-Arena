@@ -24,10 +24,10 @@ public class ClientNetwork
 
 	private static final long serialVersionUID = 9038266067124556457L;
 
-	private final TSS state;
-	private ServerInterface server;
+	private transient final TSS state;
+	private transient ServerInterface server;
 	private final long id;
-	private String serverAddress;
+	private transient String serverAddress;
 
 
 	public ClientNetwork(TSS state)
@@ -77,7 +77,7 @@ public class ClientNetwork
 	public void update(Event e)
 			throws RemoteException, OutOfSyncException
 	{
-		System.out.println("New event from server: " + e);
+		System.out.println("NETWORK: New event from server: " + e);
 
 		this.state.receiveEvent(e);
 	}
@@ -101,11 +101,19 @@ public class ClientNetwork
 		{
 			return;
 		}
+
+		System.out.println("NETINIT: Server found");
+		this.server.ping();
+		System.out.println("NETINIT: Server responds");
+
 		TSS state = this.server.register(this.id, this);
+		System.out.println("NETINIT: Aquired game state. Copying...");
 		this.state.loadFrom(state);
 
 		if (this.serverAddress == null || this.serverAddress.isEmpty())
 			this.serverAddress = address;
+
+		System.out.println("NETINIT: Connected");
 	}
 
 
@@ -126,7 +134,7 @@ public class ClientNetwork
 	public void sendEvent(Event e)
 			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
 	{
-		System.out.println("New event  to  server: " + e);
+		System.out.println("NETWORK: New event  to  server: " + e);
 
 		this.server.sendEvent(id, e);
 	}

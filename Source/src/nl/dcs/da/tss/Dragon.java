@@ -44,6 +44,13 @@ public class Dragon
 
 
 	@Override
+	public String toString()
+	{
+		return "Dragon#" + getID();
+	}
+
+
+	@Override
 	public Dragon clone()
 	{
 		Dragon clone = new Dragon(getMaxHP(), getAP(), getID());

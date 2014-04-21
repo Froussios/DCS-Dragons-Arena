@@ -5,6 +5,10 @@ import java.rmi.RemoteException;
 import java.rmi.server.ServerNotActiveException;
 import java.util.Scanner;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+
 import nl.dcs.da.client.DragonAI;
 import nl.dcs.da.client.PlayerAI;
 import nl.dcs.da.client.TimedAvatarOperator;
@@ -74,15 +78,15 @@ public class BotProgram
 		if (as == null)
 			throw new IllegalArgumentException("Did not specify what to play as.");
 
-		System.out.println("Connecting as " + as + "-" + id + " at server " + server);
+		System.out.println("INIT: Connecting as " + as + "-" + id + " at server " + server);
 
 		// Connect
-		System.out.println("Connecting to server...");
+		System.out.println("INIT: Connecting to server...");
 		this.connection = new ClientNetwork(game, id);
 		this.connection.connect(server); // Also loads state
 
 		// Create AI
-		System.out.println("Setting up AI...");
+		System.out.println("INIT: Setting up AI...");
 		Actor actor = null;
 		if (as.equals(Role.Dragon))
 		{
@@ -99,7 +103,7 @@ public class BotProgram
 		this.AI.addListener(this);
 
 		// Join game
-		System.out.println("Joining game...");
+		System.out.println("INIT: Joining game...");
 		Connect connect = new Connect(id, actor, Point.random());
 		this.game.receiveEvent(connect);
 		this.onAction(connect);
@@ -133,13 +137,13 @@ public class BotProgram
 			else if (args[i].equals("-freq"))
 				frequency = Long.parseLong(args[++i]);
 			else
-				System.out.println("Ignored unknown option " + args[i]);
+				System.out.println("INIT: WARNING: Ignored unknown option " + args[i]);
 
 		// Start bot
-		System.out.println("Starting bot...");
+		System.out.println("INIT: Starting bot...");
 		BotProgram bot = new BotProgram();
 		bot.run(role, id, server, frequency);
-		System.out.println("Starting command-line input");
+		System.out.println("INIT: Starting command-line input");
 		bot.new Monitor().start();
 	}
 
@@ -161,7 +165,7 @@ public class BotProgram
 		}
 
 		// System.out.println(this.game);
-		System.out.println("State change: " + cause);
+		System.out.println("GAME: State change: " + cause);
 	}
 
 
@@ -175,7 +179,7 @@ public class BotProgram
 	{
 		if (action != null)
 		{
-			System.out.println("Bot performing action: " + action);
+			System.out.println("GAME: Bot performing action: " + action);
 
 			try
 			{
@@ -210,7 +214,6 @@ public class BotProgram
 		@Override
 		public void run()
 		{
-			System.out.println("Interactive command-line started");
 			while (running)
 			{
 				String command = scanner.next().toLowerCase();
@@ -227,6 +230,38 @@ public class BotProgram
 							System.out.println(event);
 						break;
 					}
+					case "marshall":
+					{
+						Object item = null;
+						switch (scanner.next().toLowerCase())
+						{
+							case "connection":
+								item = connection;
+								break;
+							case "state":
+							case "game":
+								item = game;
+								break;
+							default:
+								System.out.println("Unknown element");
+						}
+						if (item != null)
+						{
+							try
+							{
+								JAXBContext context = JAXBContext.newInstance(item.getClass());
+								Marshaller m = context.createMarshaller();
+								m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+								m.marshal(item, System.out);
+							}
+							catch (JAXBException e)
+							{
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+						break;
+					}
 					default:
 					{
 						System.out.println("Learn to type");
@@ -241,7 +276,7 @@ public class BotProgram
 	@Override
 	public void onGameOver()
 	{
-		System.out.println("Game is over.");
+		System.out.println("GAME: Game is over.");
 		System.exit(0);
 	}
 
