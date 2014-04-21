@@ -18,6 +18,7 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import nl.dcs.da.tss.OutOfSyncException;
+import nl.dcs.da.tss.Point;
 import nl.dcs.da.tss.TSS;
 import nl.dcs.da.tss.TimedTSS;
 import nl.dcs.da.tss.events.Event;
@@ -42,16 +43,17 @@ public class Server
 	private static final long serialVersionUID = 5446617274331655787L;
 	private static final long maxClientDelay = 150000;
 	private static final long maxServerWatch = 20000;
+	// TODO make real pattern
 	private static final String rmiAddressPattern = "(rmi:)?//([a-zA-Z][a-zA-Z0-9]*)?:?(\\d{4})?/";
 
-	private final Integer port;
-	private final TreeBag<Event> eventBag = new TreeBag<>();
-	private final ConcurrentHashMap<Long, ClientInterface> clients = new ConcurrentHashMap<>();
-	private final ConcurrentHashMap<Integer, Long> watchedServer = new ConcurrentHashMap<>();
-	private final ConcurrentSkipListMap<Integer, String> serverAddress = new ConcurrentSkipListMap<>();
+	private transient final Integer port;
+	private transient final TreeBag<Event> eventBag = new TreeBag<>();
+	private transient final ConcurrentHashMap<Long, ClientInterface> clients = new ConcurrentHashMap<>();
+	private transient final ConcurrentHashMap<Integer, Long> watchedServer = new ConcurrentHashMap<>();
+	private transient final ConcurrentSkipListMap<Integer, String> serverAddress = new ConcurrentSkipListMap<>();
 	private final Integer id;
-	private final TimedTSS state = new TimedTSS(TSS.RECOMMENDED_MAX_DELAY);
-	private Integer window = 2;
+	private transient final TimedTSS state = new TimedTSS(TSS.RECOMMENDED_MAX_DELAY);
+	private transient Integer window = 2;
 
 
 	public Server(Integer id, Integer port, Integer window)
@@ -240,7 +242,8 @@ public class Server
 			}
 		}
 		Long end = System.currentTimeMillis();
-		System.out.println("Processed " + event + " in " + (end - start) + "ms");
+		// System.out.println("Processed " + event + " in " + (end - start) +
+		// "ms");
 	}
 
 
@@ -299,7 +302,12 @@ public class Server
 					}
 					catch (RemoteException | OutOfSyncException e)
 					{
-						e.printStackTrace();
+						System.out.println("Dropping client " + id + ". Unable to reach.");
+						synchronized (clients)
+						{
+							clients.remove(id);
+						}
+						// e.printStackTrace();
 					}
 				}
 			}.start();
@@ -342,7 +350,8 @@ public class Server
 			{
 				key = this.serverAddress.firstKey();
 			}
-			System.out.println("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
+			// System.out.println("sending " + event + " to : " + key +
+			// " address : " + this.serverAddress.get(key));
 
 			final ServerInterface contactedServer = this.lookup(key);
 			if (contactedServer != null)
@@ -455,11 +464,11 @@ public class Server
 	public void addServer(int id, String address)
 			throws RemoteException
 	{
-		if (!address.matches(Server.rmiAddressPattern))
-		{
-			System.out.println("The address in not in a correct format");
-			return;
-		}
+		// if (!address.matches(Server.rmiAddressPattern))
+		// {
+		// System.out.println("The address in not in a correct format");
+		// return;
+		// }
 		if (id == this.id)
 		{
 			System.out.println("You can't modify the address of this server");
@@ -558,6 +567,10 @@ public class Server
 	@Override
 	public void onGameOver()
 	{
+		System.out.println("Survivors:");
+		for (Point point : this.state)
+			if (this.state.get(point) != null)
+				System.out.println(" " + this.state.get(point));
 		System.out.println("Game is over. The server can now be closed.");
 	}
 
