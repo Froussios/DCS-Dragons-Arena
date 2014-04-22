@@ -10,6 +10,7 @@ import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.ServerNotActiveException;
+import java.util.Map;
 
 import nl.dcs.da.tss.OutOfSyncException;
 import nl.dcs.da.tss.TSS;
@@ -96,4 +97,6 @@ public interface ServerInterface
 	 */
 	public void ping()
 			throws RemoteException;
+
+    public Map<Integer, String> getServerList() throws RemoteException;
 }

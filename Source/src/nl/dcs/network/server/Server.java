@@ -8,6 +8,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
 import java.util.InputMismatchException;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -112,7 +113,8 @@ public class Server
 				switch (command)
 				{
 					case "send":
-						server.transferEvent(new MarkEvent(server.state.getSimulationTime()));
+                        long time = server.state.getSimulationTime() + server.eventBag.size();
+						server.transferEvent(new MarkEvent(time));
 						break;
 					case "open":
 						server.transferEvent(new OpenGame());
@@ -177,12 +179,14 @@ public class Server
 	{
 		if (i == this.id || !this.serverAddress.keySet().contains(i))
 		{
-			throw new IllegalArgumentException();
-		}
+			this.getLogger().severe("Wrong id : " + i);
+            System.out.println("Wrong id : " + i);
+        }
 		ServerInterface contactedServer = lookup(i);
 		if (contactedServer != null)
 		{
 			this.state.loadFrom(contactedServer.watch(this.id));
+            this.serverAddress.putAll(contactedServer.getServerList());
 		}
 		else
 		{
@@ -350,9 +354,8 @@ public class Server
 			{
 				key = this.serverAddress.firstKey();
 			}
-			// System.out.println("sending " + event + " to : " + key +
-			// " address : " + this.serverAddress.get(key));
-
+			System.out.println("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
+            this.getLogger().fine("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
 			final ServerInterface contactedServer = this.lookup(key);
 			if (contactedServer != null)
 			{
@@ -403,8 +406,9 @@ public class Server
 						this.server.lookup(serverId).transferEvent(event);
 
 					}
-					catch (RemoteException | OutOfSyncException | ServerNotActiveException | NotBoundException e)
+					catch (RemoteException | OutOfSyncException | ServerNotActiveException | NotBoundException | NullPointerException e)
 					{
+
 						this.server.getLogger().severe(e + " " + event);
 					}
 				}
@@ -580,6 +584,11 @@ public class Server
 	{
 		// Return immediately
 	}
+
+    @Override
+    public Map<Integer, String> getServerList() throws RemoteException {
+        return this.serverAddress;
+    }
 
 
 }
