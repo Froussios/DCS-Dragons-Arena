@@ -36,19 +36,24 @@ public abstract class NetworkRessource extends UnicastRemoteObject {
 
     public ServerInterface lookup(String s) {
         try {
-            return (ServerInterface) Naming.lookup(s + "SERVER");
+            ServerInterface serverInterface = (ServerInterface) Naming.lookup(s + "SERVER");
+            if (serverInterface == null){
+                throw new NullPointerException ();
+            }
+            return  serverInterface;
         } catch (NotBoundException | ConnectException e) {
             System.out.println("Unable de reach " + s);
             this.getLogger().severe("Unable de reach " + s);
-            e.printStackTrace();
         } catch (RemoteException e) {
             System.out.println("Unable de reach " + s);
             this.getLogger().severe("Unable de reach " + s);
-            e.printStackTrace();
         } catch (MalformedURLException e) {
             System.out.println("Address format incorrect (" + s + ")");
             this.getLogger().severe("Address format incorrect (" + s + ")");
-            e.printStackTrace();
+        } catch (NullPointerException e){
+
+            System.out.println("Unable de reach " + s);
+            this.getLogger().severe("Unable de reach " + s);
         }
         return null;
     }
