@@ -23,6 +23,7 @@ import nl.dcs.da.tss.TSS;
 import nl.dcs.da.tss.TimedTSS;
 import nl.dcs.da.tss.events.Connect;
 import nl.dcs.da.tss.events.Event;
+import nl.dcs.da.tss.events.OpenGame;
 import nl.dcs.da.tss.events.StartGame;
 import nl.dcs.da.tss.util.Alarm.AlarmRunningException;
 import nl.dcs.network.client.ClientNetwork;
@@ -48,6 +49,7 @@ public class BotProgram
 	private ClientNetwork connection;
 	private TimedAvatarOperator AI;
 	private boolean running = true;
+	private Connect myStart = null;
 
 
 	/**
@@ -104,9 +106,9 @@ public class BotProgram
 
 		// Join game
 		System.out.println("INIT: Joining game...");
-		Connect connect = new Connect(id, actor, Point.random());
-		this.game.receiveEvent(connect);
-		this.onAction(connect);
+		this.myStart = new Connect(id, actor, Point.random());
+		this.game.receiveEvent(myStart);
+		this.onAction(myStart);
 	}
 
 
@@ -160,6 +162,22 @@ public class BotProgram
 			}
 			catch (AlarmRunningException e)
 			{
+				e.printStackTrace();
+			}
+		}
+
+		else if (cause instanceof OpenGame)
+		{
+			try
+			{
+				// Game just opened. Connect.
+				System.out.println("INIT: Game opened. Joining...");
+				this.game.receiveEvent(this.myStart);
+				this.onAction(this.myStart);
+			}
+			catch (OutOfSyncException e)
+			{
+				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
