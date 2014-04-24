@@ -417,7 +417,7 @@ public class Server
 				}.start();
 			}
 			count++;
-		} while (count <= nbServer);
+		} while (count < nbServer);
 
 		// Send event to watched servers
 		Integer[] watchedServers_Snapshot = new Integer[0];
