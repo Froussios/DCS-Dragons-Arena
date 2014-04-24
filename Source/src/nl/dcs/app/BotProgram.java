@@ -5,10 +5,6 @@ import java.rmi.RemoteException;
 import java.rmi.server.ServerNotActiveException;
 import java.util.Scanner;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-
 import nl.dcs.da.client.DragonAI;
 import nl.dcs.da.client.PlayerAI;
 import nl.dcs.da.client.TimedAvatarOperator;
@@ -246,38 +242,6 @@ public class BotProgram
 					{
 						for (Event event : game.getEventQueue())
 							System.out.println(event);
-						break;
-					}
-					case "marshall":
-					{
-						Object item = null;
-						switch (scanner.next().toLowerCase())
-						{
-							case "connection":
-								item = connection;
-								break;
-							case "state":
-							case "game":
-								item = game;
-								break;
-							default:
-								System.out.println("Unknown element");
-						}
-						if (item != null)
-						{
-							try
-							{
-								JAXBContext context = JAXBContext.newInstance(item.getClass());
-								Marshaller m = context.createMarshaller();
-								m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-								m.marshal(item, System.out);
-							}
-							catch (JAXBException e)
-							{
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-						}
 						break;
 					}
 					default:
