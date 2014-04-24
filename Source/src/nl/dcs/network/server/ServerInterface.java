@@ -34,9 +34,10 @@ public interface ServerInterface
 	 * @throws NotBoundException
 	 * @throws ServerNotActiveException
 	 * @throws OutOfSyncException
+	 * @throws Exception 
 	 */
 	void sendEvent(long sender, Event event)
-			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException;
+			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException, Exception;
 
 
 	/**
@@ -47,9 +48,10 @@ public interface ServerInterface
 	 * @throws NotBoundException
 	 * @throws ServerNotActiveException
 	 * @throws OutOfSyncException
+	 * @throws Exception 
 	 */
 	void transferEvent(Event event)
-			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException;
+			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException, Exception;
 
 
 	/**

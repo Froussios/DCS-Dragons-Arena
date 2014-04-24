@@ -14,6 +14,9 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,6 +61,7 @@ public class Server
 	private transient final ConcurrentHashMap<Long, ClientInterface> clients = new ConcurrentHashMap<>();
 	private transient final ConcurrentHashMap<Integer, Long> watchedServer = new ConcurrentHashMap<>();
 	private transient final ConcurrentSkipListMap<Integer, String> serverAddress = new ConcurrentSkipListMap<>();
+	private transient final List<Integer> ignoreList = Collections.synchronizedList(new ArrayList<Integer>());
 	private final Integer id;
 	private transient final TimedTSS state = new TimedTSS(TSS.RECOMMENDED_MAX_DELAY);
 	private transient Integer window = 2;
@@ -163,6 +167,10 @@ public class Server
 						server.setOutput (false); break;
 					case "loud":
 						server.setOutput (true); break;
+					case "ignore":
+						server.ignoreList.add(input.nextInt());break;
+					case "unignore" : 
+						server.ignoreList.remove(input.nextInt());break;
 					default:
 						 System.out.println("Unknown command");
 				}
@@ -274,13 +282,11 @@ public class Server
 	 * 
 	 * @param sender
 	 * @param event
-	 * @throws RemoteException
-	 * @throws NotBoundException
-	 * @throws ServerNotActiveException
+	 * @throws Exception 
 	 */
 	@Override
 	public void sendEvent(long sender, Event event)
-			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
+			throws Exception
 	{
 		Long start = System.currentTimeMillis();
 		if (this.verifyEvent(event, sender))
@@ -308,10 +314,11 @@ public class Server
 
 	/**
 	 * {@inheritDoc}
+	 * @throws Exception 
 	 */
 	@Override
 	public void transferEvent(Event event)
-			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
+			throws Exception
 	{
 		if (this.addToEventBag(event))
 		{
@@ -375,13 +382,10 @@ public class Server
 	 * 
 	 * @param event The event to be spread
 	 * @param nbServer the number of server to send the event to
-	 * @throws RemoteException
-	 * @throws NotBoundException
-	 * @throws ServerNotActiveException
-	 * @throws OutOfSyncException
+	 * @throws Exception 
 	 */
 	private void spreadServers(final Event event, int nbServer)
-			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
+			throws Exception
 	{
 		if (this.window > this.serverAddress.keySet().size())
 		{
@@ -401,6 +405,7 @@ public class Server
 			{
 				key = this.serverAddress.firstKey();
 			}
+			if (!this.ignoreList.contains(key)) {
 			if (this.hasOutput()) System.out.println("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
 			this.getLogger().fine("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
 			final ServerInterface contactedServer = this.lookup(key);
@@ -417,12 +422,13 @@ public class Server
 							contactedServer.transferEvent(event);
 
 						}
-						catch (RemoteException | OutOfSyncException | ServerNotActiveException | NotBoundException e)
+						catch (Exception e)
 						{
 							this.server.getLogger().severe(e + " " + event);
 						}
 					}
 				}.start();
+			}
 			}
 			count++;
 		} while (count < nbServer);
@@ -435,6 +441,8 @@ public class Server
 		}
 		for (final Integer serverId : watchedServers_Snapshot)
 		{
+			if (!this.ignoreList.contains(key)) {
+				
 			if (this.hasOutput()) System.out.println("(Watch) sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
 			this.getLogger().fine("(Watch) sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
 			new Sender(this)
@@ -448,14 +456,16 @@ public class Server
 						this.server.lookup(serverId).transferEvent(event);
 
 					}
-					catch (RemoteException | OutOfSyncException | ServerNotActiveException | NotBoundException | NullPointerException e)
+					catch ( Exception e)
 					{
 
 						this.server.getLogger().severe(e + " " + event);
 					}
 				}
 			}.start();
-
+		} else {
+			throw new Exception ("You should not this server ignored, please check with the system admin");
+		}
 			if (event.getSimulationTime() > this.watchedServer.get(serverId) + Server.maxServerWatch)
 			{
 				this.watchedServer.remove(serverId);
