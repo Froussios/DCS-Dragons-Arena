@@ -11,6 +11,7 @@ import nl.dcs.da.tss.events.ActorAttack;
 import nl.dcs.da.tss.events.Connect;
 import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.events.Heal;
+import nl.dcs.da.tss.events.MarkEvent;
 import nl.dcs.da.tss.events.OpenGame;
 import nl.dcs.da.tss.events.PlayerMove;
 import nl.dcs.da.tss.events.StartGame;
@@ -95,6 +96,10 @@ public class State
 		else if (event instanceof StartGame)
 		{
 			consume((StartGame) event);
+		}
+		else if (event instanceof MarkEvent)
+		{
+
 		}
 		else
 		{
