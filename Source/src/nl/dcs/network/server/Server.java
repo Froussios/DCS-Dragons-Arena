@@ -501,7 +501,7 @@ public class Server
 		{
 			System.out.println("You can't modify the address of this server");
 		}
-		this.watch(id);
+		//this.watch(id);
 		for (Integer i : this.serverAddress.keySet())
 		{
 			
