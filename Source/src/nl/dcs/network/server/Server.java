@@ -1,5 +1,9 @@
 package nl.dcs.network.server;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.NotBoundException;
@@ -146,14 +150,38 @@ public class Server
 						for (Event event : server.eventBag.uniqueSet())
 							System.out.println(event);
 						break;
+						
+					case "load":
+						server.loadFrom(input.next());
 					default:
 						System.out.println("Unknown command");
 				}
 			}
 		}
-		catch (RemoteException | OutOfSyncException | NotBoundException | ServerNotActiveException | InputMismatchException ex)
-		{
+		catch (Exception ex){
 			Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+		}
+	}
+
+
+	private void loadFrom(String path) throws IOException {
+		BufferedReader br = null;
+		 
+		try {
+ 
+			String line;
+ 
+			br = new BufferedReader(new FileReader(path));
+ 
+			while ((line = br.readLine()) != null) {
+				System.out.println(line);
+				String [] token = line.split(" ");
+				this.addServer(Integer.parseInt(token[0]), token[1]);
+				
+			}
+ 
+		} finally {
+			if (br != null)br.close();
 		}
 	}
 
@@ -251,6 +279,15 @@ public class Server
 	}
 
 
+	@Override
+	public TimedTSS watch(int id)
+			throws RemoteException
+	{
+		watchedServer.put(id, this.state.getSimulationTime());
+		return this.state;
+	}
+
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -264,15 +301,6 @@ public class Server
 			spreadServers(event, this.window);
 			spreadClients(event);
 		}
-	}
-
-
-	@Override
-	public TimedTSS watch(int id)
-			throws RemoteException
-	{
-		watchedServer.put(id, this.state.getSimulationTime());
-		return this.state;
 	}
 
 
@@ -376,14 +404,9 @@ public class Server
 						}
 					}
 				}.start();
-
-			}
-			else
-			{
-				continue;
 			}
 			count++;
-		} while (count < nbServer);
+		} while (count <= nbServer);
 
 		// Send event to watched servers
 		Integer[] watchedServers_Snapshot = new Integer[0];
@@ -393,8 +416,8 @@ public class Server
 		}
 		for (final Integer serverId : watchedServers_Snapshot)
 		{
-			System.out.println("sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
-			Logger.getLogger(this.getClass().getName()).fine("sending to " + serverId);
+			System.out.println("(Watch) sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
+			this.getLogger().fine("(Watch) sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
 			new Sender(this)
 			{
 
@@ -466,8 +489,9 @@ public class Server
 
 
 	public void addServer(int id, String address)
-			throws RemoteException
+			throws RemoteException, UnknownHostException
 	{
+		address.replace("//:", "//" + Inet4Address.getLocalHost()+":");
 		// if (!address.matches(Server.rmiAddressPattern))
 		// {
 		// System.out.println("The address in not in a correct format");
@@ -480,21 +504,14 @@ public class Server
 		this.watch(id);
 		for (Integer i : this.serverAddress.keySet())
 		{
-			try
-			{
+			
 				String a = this.serverAddress.get(i);
-
+				a.replace("//:", "//" + Inet4Address.getLocalHost()+":");
 				this.lookup(address).putServer(i, a);
 				ServerInterface contactedServer = this.lookup(a);
 				if (contactedServer != null)
 					contactedServer.putServer(id, address);
-			}
-			catch (RemoteException e)
-			{
-				e.printStackTrace();
-			}
 		}
-
 	}
 
 
