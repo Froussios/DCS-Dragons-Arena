@@ -11,7 +11,6 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
-import java.util.InputMismatchException;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -117,7 +116,7 @@ public class Server
 				switch (command)
 				{
 					case "send":
-                        long time = server.state.getSimulationTime() + server.eventBag.size();
+						long time = server.state.getSimulationTime() + server.eventBag.size();
 						server.transferEvent(new MarkEvent(time));
 						break;
 					case "open":
@@ -132,6 +131,10 @@ public class Server
 						break;
 					case "list":
 						server.listServer();
+						break;
+					case "watchlist":
+						for (Integer serverid : server.watchedServer.keySet())
+							System.out.println(serverid);
 						break;
 					case "add":
 						server.addServer(input.nextInt(), input.next());
@@ -150,7 +153,7 @@ public class Server
 						for (Event event : server.eventBag.uniqueSet())
 							System.out.println(event);
 						break;
-						
+
 					case "load":
 						server.loadFrom(input.next());
 					default:
@@ -158,30 +161,38 @@ public class Server
 				}
 			}
 		}
-		catch (Exception ex){
+		catch (Exception ex)
+		{
 			Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
 		}
 	}
 
 
-	private void loadFrom(String path) throws IOException {
+	private void loadFrom(String path)
+			throws IOException
+	{
 		BufferedReader br = null;
-		 
-		try {
- 
+
+		try
+		{
+
 			String line;
- 
+
 			br = new BufferedReader(new FileReader(path));
- 
-			while ((line = br.readLine()) != null) {
+
+			while ((line = br.readLine()) != null)
+			{
 				System.out.println(line);
-				String [] token = line.split(" ");
+				String[] token = line.split(" ");
 				this.addServer(Integer.parseInt(token[0]), token[1]);
-				
+
 			}
- 
-		} finally {
-			if (br != null)br.close();
+
+		}
+		finally
+		{
+			if (br != null)
+				br.close();
 		}
 	}
 
@@ -208,13 +219,13 @@ public class Server
 		if (i == this.id || !this.serverAddress.keySet().contains(i))
 		{
 			this.getLogger().severe("Wrong id : " + i);
-            System.out.println("Wrong id : " + i);
-        }
+			System.out.println("Wrong id : " + i);
+		}
 		ServerInterface contactedServer = lookup(i);
 		if (contactedServer != null)
 		{
 			this.state.loadFrom(contactedServer.watch(this.id));
-            this.serverAddress.putAll(contactedServer.getServerList());
+			this.serverAddress.putAll(contactedServer.getServerList());
 		}
 		else
 		{
@@ -383,7 +394,7 @@ public class Server
 				key = this.serverAddress.firstKey();
 			}
 			System.out.println("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
-            this.getLogger().fine("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
+			this.getLogger().fine("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
 			final ServerInterface contactedServer = this.lookup(key);
 			if (contactedServer != null)
 			{
@@ -491,7 +502,7 @@ public class Server
 	public void addServer(int id, String address)
 			throws RemoteException, UnknownHostException
 	{
-		address.replace("//:", "//" + Inet4Address.getLocalHost()+":");
+		address.replace("//:", "//" + Inet4Address.getLocalHost() + ":");
 		// if (!address.matches(Server.rmiAddressPattern))
 		// {
 		// System.out.println("The address in not in a correct format");
@@ -501,16 +512,16 @@ public class Server
 		{
 			System.out.println("You can't modify the address of this server");
 		}
-		//this.watch(id);
+		// this.watch(id);
 		for (Integer i : this.serverAddress.keySet())
 		{
-			
-				String a = this.serverAddress.get(i);
-				a.replace("//:", "//" + Inet4Address.getLocalHost()+":");
-				this.lookup(address).putServer(i, a);
-				ServerInterface contactedServer = this.lookup(a);
-				if (contactedServer != null)
-					contactedServer.putServer(id, address);
+
+			String a = this.serverAddress.get(i);
+			a.replace("//:", "//" + Inet4Address.getLocalHost() + ":");
+			this.lookup(address).putServer(i, a);
+			ServerInterface contactedServer = this.lookup(a);
+			if (contactedServer != null)
+				contactedServer.putServer(id, address);
 		}
 	}
 
@@ -602,10 +613,13 @@ public class Server
 		// Return immediately
 	}
 
-    @Override
-    public Map<Integer, String> getServerList() throws RemoteException {
-        return this.serverAddress;
-    }
+
+	@Override
+	public Map<Integer, String> getServerList()
+			throws RemoteException
+	{
+		return this.serverAddress;
+	}
 
 
 }
