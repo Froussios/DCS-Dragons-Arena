@@ -25,6 +25,7 @@ public abstract class NetworkRessource extends UnicastRemoteObject {
     private static final long serialVersionUID = -8851690600231736075L;
 
 
+    private boolean output = true;
     /**
      * Constructor
      *
@@ -62,4 +63,12 @@ public abstract class NetworkRessource extends UnicastRemoteObject {
     public Logger getLogger(){
         return Logger.getLogger(this.getClass().getName());
     }
+
+	public boolean hasOutput() {
+		return output;
+	}
+
+	public void setOutput(boolean output) {
+		this.output = output;
+	}
 }

@@ -135,7 +135,7 @@ public class ClientNetwork
 			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
 	{
 		System.out.println("NETWORK: New event  to  server: " + e);
-
+		
 		this.server.sendEvent(id, e);
 	}
 }

@@ -1,8 +1,11 @@
 package nl.dcs.network.server;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -95,7 +98,7 @@ public class Server
 
 			if (set.nonOptionArguments().size() != 1)
 			{
-				System.out.println("Missing id");
+				 System.out.println("Missing id");
 				System.exit(1);
 			}
 			if (!(set.nonOptionArguments().get(0) instanceof Integer))
@@ -105,7 +108,7 @@ public class Server
 			int id = (Integer) set.nonOptionArguments().get(0);
 			server = new Server(id, set.valueOf(port), set.valueOf(window));
 			server.expose();
-			System.out.println(server);
+			 System.out.println(server);
 			System.out.println("Server start " + args[0]);
 			server.getLogger().fine("Server ready to receive events");
 			Scanner input = new Scanner(System.in);
@@ -134,7 +137,7 @@ public class Server
 						break;
 					case "watchlist":
 						for (Integer serverid : server.watchedServer.keySet())
-							System.out.println(serverid);
+							 System.out.println(serverid);
 						break;
 					case "add":
 						server.addServer(input.nextInt(), input.next());
@@ -143,21 +146,25 @@ public class Server
 						server.refresh(input.nextInt());
 						break;
 					case "print":
-						System.out.println(server.state);
+						 System.out.println(server.state);
 						break;
 					case "events":
 						for (Event event : server.state.getEventQueue())
-							System.out.println(event);
+							 System.out.println(event);
 						break;
 					case "bag":
 						for (Event event : server.eventBag.uniqueSet())
-							System.out.println(event);
+							 System.out.println(event);
 						break;
 
 					case "load":
-						server.loadFrom(input.next());
+						server.loadFrom(input.next());break;
+					case "silence" :
+						server.setOutput (false); break;
+					case "loud":
+						server.setOutput (true); break;
 					default:
-						System.out.println("Unknown command");
+						 System.out.println("Unknown command");
 				}
 			}
 		}
@@ -182,7 +189,7 @@ public class Server
 
 			while ((line = br.readLine()) != null)
 			{
-				System.out.println(line);
+				if (this.hasOutput()) System.out.println(line);
 				String[] token = line.split(" ");
 				this.addServer(Integer.parseInt(token[0]), token[1]);
 
@@ -201,7 +208,7 @@ public class Server
 	{
 		for (Integer id : serverAddress.keySet())
 		{
-			System.out.println(id + ":" + serverAddress.get(id));
+			if (this.hasOutput()) System.out.println(id + ":" + serverAddress.get(id));
 		}
 	}
 
@@ -219,7 +226,7 @@ public class Server
 		if (i == this.id || !this.serverAddress.keySet().contains(i))
 		{
 			this.getLogger().severe("Wrong id : " + i);
-			System.out.println("Wrong id : " + i);
+			if (this.hasOutput()) System.out.println("Wrong id : " + i);
 		}
 		ServerInterface contactedServer = lookup(i);
 		if (contactedServer != null)
@@ -229,7 +236,7 @@ public class Server
 		}
 		else
 		{
-			System.out.println("Unable to refresh");
+			if (this.hasOutput()) System.out.println("Unable to refresh");
 		}
 	}
 
@@ -285,7 +292,7 @@ public class Server
 			}
 		}
 		Long end = System.currentTimeMillis();
-		// System.out.println("Processed " + event + " in " + (end - start) +
+		// if (this.hasOutput()) System.out.println("Processed " + event + " in " + (end - start) +
 		// "ms");
 	}
 
@@ -308,7 +315,7 @@ public class Server
 	{
 		if (this.addToEventBag(event))
 		{
-			System.out.println(event);
+			if (this.hasOutput()) System.out.println(event);
 			spreadServers(event, this.window);
 			spreadClients(event);
 		}
@@ -345,7 +352,8 @@ public class Server
 					}
 					catch (RemoteException | OutOfSyncException e)
 					{
-						System.out.println("Dropping client " + id + ". Unable to reach.");
+						if (this.server.hasOutput()) 
+							System.out.println("Dropping client " + id + ". Unable to reach.");
 						synchronized (clients)
 						{
 							clients.remove(id);
@@ -378,7 +386,7 @@ public class Server
 		if (this.window > this.serverAddress.keySet().size())
 		{
 			String message = "Not enough servers to operate";
-			System.out.println(message);
+			if (this.hasOutput()) System.out.println(message);
 			this.getLogger().log(Level.SEVERE, message);
 			return;
 		}
@@ -393,7 +401,7 @@ public class Server
 			{
 				key = this.serverAddress.firstKey();
 			}
-			System.out.println("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
+			if (this.hasOutput()) System.out.println("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
 			this.getLogger().fine("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
 			final ServerInterface contactedServer = this.lookup(key);
 			if (contactedServer != null)
@@ -427,7 +435,7 @@ public class Server
 		}
 		for (final Integer serverId : watchedServers_Snapshot)
 		{
-			System.out.println("(Watch) sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
+			if (this.hasOutput()) System.out.println("(Watch) sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
 			this.getLogger().fine("(Watch) sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
 			new Sender(this)
 			{
@@ -484,7 +492,7 @@ public class Server
 	{
 		this.clients.put(sender, client);
 		this.getLogger().fine("New client : " + sender);
-		System.out.println("New client : " + sender);
+		if (this.hasOutput()) System.out.println("New client : " + sender);
 		return this.state;
 	}
 
@@ -505,12 +513,12 @@ public class Server
 		address.replace("//:", "//" + Inet4Address.getLocalHost() + ":");
 		// if (!address.matches(Server.rmiAddressPattern))
 		// {
-		// System.out.println("The address in not in a correct format");
+		// if (this.hasOutput()) System.out.println("The address in not in a correct format");
 		// return;
 		// }
 		if (id == this.id)
 		{
-			System.out.println("You can't modify the address of this server");
+			if (this.hasOutput()) System.out.println("You can't modify the address of this server");
 		}
 		// this.watch(id);
 		for (Integer i : this.serverAddress.keySet())
@@ -599,11 +607,11 @@ public class Server
 	@Override
 	public void onGameOver()
 	{
-		System.out.println("Survivors:");
+		if (this.hasOutput()) System.out.println("Survivors:");
 		for (Point point : this.state)
 			if (this.state.get(point) != null)
-				System.out.println(" " + this.state.get(point));
-		System.out.println("Game is over. The server can now be closed.");
+				if (this.hasOutput()) System.out.println(" " + this.state.get(point));
+		if (this.hasOutput()) System.out.println("Game is over. The server can now be closed.");
 	}
 
 
