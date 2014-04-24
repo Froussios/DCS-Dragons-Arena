@@ -138,6 +138,13 @@ public class ClientNetwork
 		if (this.hasOutput())
 			System.out.println("NETWORK: New event  to  server: " + e);
 
-		this.server.sendEvent(id, e);
+		try
+		{
+			this.server.sendEvent(id, e);
+		}
+		catch (Exception e1)
+		{
+			e1.printStackTrace();
+		}
 	}
 }
