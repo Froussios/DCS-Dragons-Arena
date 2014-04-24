@@ -46,6 +46,7 @@ public class BotProgram
 	private TimedAvatarOperator AI;
 	private boolean running = true;
 	private Connect myStart = null;
+	private boolean silenced = false;
 
 
 	/**
@@ -179,7 +180,8 @@ public class BotProgram
 		}
 
 		// System.out.println(this.game);
-		System.out.println("GAME: State change: " + cause);
+		if (!this.silenced)
+			System.out.println("GAME: State change: " + cause);
 	}
 
 
@@ -243,6 +245,16 @@ public class BotProgram
 						for (Event event : game.getEventQueue())
 							System.out.println(event);
 						break;
+					}
+					case "silence":
+					{
+						silenced = true;
+						connection.setOutput(false);
+					}
+					case "unsilence":
+					{
+						silenced = false;
+						connection.setOutput(true);
 					}
 					default:
 					{

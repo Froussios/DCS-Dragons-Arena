@@ -77,7 +77,8 @@ public class ClientNetwork
 	public void update(Event e)
 			throws RemoteException, OutOfSyncException
 	{
-		System.out.println("NETWORK: New event from server: " + e);
+		if (this.hasOutput())
+			System.out.println("NETWORK: New event from server: " + e);
 
 		this.state.receiveEvent(e);
 	}
@@ -134,8 +135,9 @@ public class ClientNetwork
 	public void sendEvent(Event e)
 			throws RemoteException, NotBoundException, ServerNotActiveException, OutOfSyncException
 	{
-		System.out.println("NETWORK: New event  to  server: " + e);
-		
+		if (this.hasOutput())
+			System.out.println("NETWORK: New event  to  server: " + e);
+
 		this.server.sendEvent(id, e);
 	}
 }
