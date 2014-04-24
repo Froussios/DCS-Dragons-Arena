@@ -14,6 +14,8 @@ public class Connect
 		extends Event
 {
 
+	private static final long serialVersionUID = -1514829199321256309L;
+
 	private final Point startingPosition;
 	private final Actor actor;
 
@@ -63,13 +65,13 @@ public class Connect
 		this.actor = actor;
 
 		if (playerId != actor.getID())
-			throw new IllegalArgumentException("playerId does not match the Actor instance provided.");
+			throw new IllegalArgumentException("actorId does not match the Actor instance provided.");
 	}
 
 
 	@Override
 	public String toString()
 	{
-		return "Connect@" + getSimulationTime() + ": Player " + getIssuer() + " starts at " + getStartingPosition();
+		return "Connect@" + getSimulationTime() + ": " + actor + " starts at " + getStartingPosition();
 	}
 }
