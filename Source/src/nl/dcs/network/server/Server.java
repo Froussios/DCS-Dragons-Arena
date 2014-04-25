@@ -20,6 +20,8 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.net.ServerSocketFactory;
+
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
@@ -31,6 +33,7 @@ import nl.dcs.da.tss.events.Event;
 import nl.dcs.da.tss.events.MarkEvent;
 import nl.dcs.da.tss.events.OpenGame;
 import nl.dcs.da.tss.events.StartGame;
+import nl.dcs.da.tss.util.IncGenerator;
 import nl.dcs.network.NetworkRessource;
 import nl.dcs.network.client.ClientInterface;
 
@@ -112,6 +115,7 @@ public class Server
 			System.out.println("Server start " + args[0]);
 			server.getLogger().fine("Server ready to receive events");
 			Scanner input = new Scanner(System.in);
+			IncGenerator inc = new IncGenerator ();
 			while (true)
 			{
 				System.out.print("> ");
@@ -119,9 +123,11 @@ public class Server
 				switch (command)
 				{
 					case "send":
-						long time = server.state.getSimulationTime() + server.eventBag.size();
-						server.transferEvent(new MarkEvent(time));
+						
+						server.transferEvent(new MarkEvent(inc.next() * (server.serverAddress.size() + server.id)));
 						break;
+					case "broadcast" :
+						server.spreadServers(new MarkEvent(inc.next() * (server.serverAddress.size() + server.id)), server.serverAddress.size());
 					case "open":
 						server.transferEvent(new OpenGame());
 						break;
