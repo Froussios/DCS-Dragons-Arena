@@ -1,11 +1,8 @@
 package nl.dcs.network.server;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -13,7 +10,6 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.server.ServerNotActiveException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -102,7 +98,7 @@ public class Server
 
 			if (set.nonOptionArguments().size() != 1)
 			{
-				 System.out.println("Missing id");
+				System.out.println("Missing id");
 				System.exit(1);
 			}
 			if (!(set.nonOptionArguments().get(0) instanceof Integer))
@@ -112,7 +108,7 @@ public class Server
 			int id = (Integer) set.nonOptionArguments().get(0);
 			server = new Server(id, set.valueOf(port), set.valueOf(window));
 			server.expose();
-			 System.out.println(server);
+			System.out.println(server);
 			System.out.println("Server start " + args[0]);
 			server.getLogger().fine("Server ready to receive events");
 			Scanner input = new Scanner(System.in);
@@ -141,7 +137,7 @@ public class Server
 						break;
 					case "watchlist":
 						for (Integer serverid : server.watchedServer.keySet())
-							 System.out.println(serverid);
+							System.out.println(serverid);
 						break;
 					case "add":
 						server.addServer(input.nextInt(), input.next());
@@ -150,29 +146,34 @@ public class Server
 						server.refresh(input.nextInt());
 						break;
 					case "print":
-						 System.out.println(server.state);
+						System.out.println(server.state);
 						break;
 					case "events":
 						for (Event event : server.state.getEventQueue())
-							 System.out.println(event);
+							System.out.println(event);
 						break;
 					case "bag":
 						for (Event event : server.eventBag.uniqueSet())
-							 System.out.println(event);
+							System.out.println(event);
 						break;
 
 					case "load":
-						server.loadFrom(input.next());break;
-					case "silence" :
-						server.setOutput (false); break;
+						server.loadFrom(input.next());
+						break;
+					case "silence":
+						server.setOutput(false);
+						break;
 					case "loud":
-						server.setOutput (true); break;
+						server.setOutput(true);
+						break;
 					case "ignore":
-						server.ignoreList.add(input.nextInt());break;
-					case "unignore" : 
-						server.ignoreList.remove(input.nextInt());break;
+						server.ignoreList.add(input.nextInt());
+						break;
+					case "unignore":
+						server.ignoreList.remove(input.nextInt());
+						break;
 					default:
-						 System.out.println("Unknown command");
+						System.out.println("Unknown command");
 				}
 			}
 		}
@@ -197,7 +198,8 @@ public class Server
 
 			while ((line = br.readLine()) != null)
 			{
-				if (this.hasOutput()) System.out.println(line);
+				if (this.hasOutput())
+					System.out.println(line);
 				String[] token = line.split(" ");
 				this.addServer(Integer.parseInt(token[0]), token[1]);
 
@@ -216,7 +218,8 @@ public class Server
 	{
 		for (Integer id : serverAddress.keySet())
 		{
-			if (this.hasOutput()) System.out.println(id + ":" + serverAddress.get(id));
+			if (this.hasOutput())
+				System.out.println(id + ":" + serverAddress.get(id));
 		}
 	}
 
@@ -234,7 +237,8 @@ public class Server
 		if (i == this.id || !this.serverAddress.keySet().contains(i))
 		{
 			this.getLogger().severe("Wrong id : " + i);
-			if (this.hasOutput()) System.out.println("Wrong id : " + i);
+			if (this.hasOutput())
+				System.out.println("Wrong id : " + i);
 		}
 		ServerInterface contactedServer = lookup(i);
 		if (contactedServer != null)
@@ -244,7 +248,8 @@ public class Server
 		}
 		else
 		{
-			if (this.hasOutput()) System.out.println("Unable to refresh");
+			if (this.hasOutput())
+				System.out.println("Unable to refresh");
 		}
 	}
 
@@ -282,24 +287,47 @@ public class Server
 	 * 
 	 * @param sender
 	 * @param event
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	@Override
-	public void sendEvent(long sender, Event event)
+	public void sendEvent(final long sender, final Event event)
 			throws Exception
 	{
-		Long start = System.currentTimeMillis();
-		if (this.verifyEvent(event, sender))
+		final Server t_server = this;
+		new Thread()
 		{
-			if (this.addToEventBag(event))
+
+			Server server = t_server;
+
+
+			@Override
+			public void run()
 			{
-				spreadServers(event, this.serverAddress.size());
-				spreadClients(event);
+				Long start = System.currentTimeMillis();
+				if (server.verifyEvent(event, sender))
+				{
+					try
+					{
+						if (server.addToEventBag(event))
+						{
+							spreadServers(event, server.serverAddress.size());
+							spreadClients(event);
+						}
+					}
+					catch (OutOfSyncException e)
+					{
+						e.printStackTrace();
+					}
+					catch (Exception e)
+					{
+						e.printStackTrace();
+					}
+				}
+				Long end = System.currentTimeMillis();
 			}
-		}
-		Long end = System.currentTimeMillis();
-		// if (this.hasOutput()) System.out.println("Processed " + event + " in " + (end - start) +
-		// "ms");
+		}.start();
+
+
 	}
 
 
@@ -314,18 +342,40 @@ public class Server
 
 	/**
 	 * {@inheritDoc}
-	 * @throws Exception 
+	 * 
+	 * @throws Exception
 	 */
 	@Override
-	public void transferEvent(Event event)
+	public void transferEvent(final Event event)
 			throws Exception
 	{
-		if (this.addToEventBag(event))
+		final Server t_server = this;
+		new Thread()
 		{
-			if (this.hasOutput()) System.out.println(event);
-			spreadServers(event, this.window);
-			spreadClients(event);
-		}
+
+			Server server = t_server;
+
+
+			@Override
+			public void run()
+			{
+				try
+				{
+					if (server.addToEventBag(event))
+					{
+						if (server.hasOutput())
+							System.out.println(event);
+						spreadServers(event, server.window);
+						spreadClients(event);
+					}
+				}
+				catch (Exception e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}.start();
 	}
 
 
@@ -359,7 +409,7 @@ public class Server
 					}
 					catch (RemoteException | OutOfSyncException e)
 					{
-						if (this.server.hasOutput()) 
+						if (this.server.hasOutput())
 							System.out.println("Dropping client " + id + ". Unable to reach.");
 						synchronized (clients)
 						{
@@ -382,7 +432,7 @@ public class Server
 	 * 
 	 * @param event The event to be spread
 	 * @param nbServer the number of server to send the event to
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private void spreadServers(final Event event, int nbServer)
 			throws Exception
@@ -390,7 +440,8 @@ public class Server
 		if (this.window > this.serverAddress.keySet().size())
 		{
 			String message = "Not enough servers to operate";
-			if (this.hasOutput()) System.out.println(message);
+			if (this.hasOutput())
+				System.out.println(message);
 			this.getLogger().log(Level.SEVERE, message);
 			return;
 		}
@@ -405,30 +456,32 @@ public class Server
 			{
 				key = this.serverAddress.firstKey();
 			}
-			if (!this.ignoreList.contains(key)) {
-			if (this.hasOutput()) System.out.println("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
-			this.getLogger().fine("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
-			final ServerInterface contactedServer = this.lookup(key);
-			if (contactedServer != null)
+			if (!this.ignoreList.contains(key))
 			{
-				new Sender(this)
+				if (this.hasOutput())
+					System.out.println("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
+				this.getLogger().fine("sending " + event + " to : " + key + " address : " + this.serverAddress.get(key));
+				final ServerInterface contactedServer = this.lookup(key);
+				if (contactedServer != null)
 				{
-
-					@Override
-					public void run()
+					new Sender(this)
 					{
-						try
-						{
-							contactedServer.transferEvent(event);
 
-						}
-						catch (Exception e)
+						@Override
+						public void run()
 						{
-							this.server.getLogger().severe(e + " " + event);
+							try
+							{
+								contactedServer.transferEvent(event);
+
+							}
+							catch (Exception e)
+							{
+								this.server.getLogger().severe(e + " " + event);
+							}
 						}
-					}
-				}.start();
-			}
+					}.start();
+				}
 			}
 			count++;
 		} while (count < nbServer);
@@ -441,31 +494,35 @@ public class Server
 		}
 		for (final Integer serverId : watchedServers_Snapshot)
 		{
-			if (!this.ignoreList.contains(key)) {
-				
-			if (this.hasOutput()) System.out.println("(Watch) sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
-			this.getLogger().fine("(Watch) sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
-			new Sender(this)
+			if (!this.ignoreList.contains(key))
 			{
 
-				@Override
-				public void run()
+				if (this.hasOutput())
+					System.out.println("(Watch) sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
+				this.getLogger().fine("(Watch) sending " + event + " to : " + serverId + " address : " + this.serverAddress.get(serverId));
+				new Sender(this)
 				{
-					try
-					{
-						this.server.lookup(serverId).transferEvent(event);
 
-					}
-					catch ( Exception e)
+					@Override
+					public void run()
 					{
+						try
+						{
+							this.server.lookup(serverId).transferEvent(event);
 
-						this.server.getLogger().severe(e + " " + event);
+						}
+						catch (Exception e)
+						{
+
+							this.server.getLogger().severe(e + " " + event);
+						}
 					}
-				}
-			}.start();
-		} else {
-			throw new Exception ("You should not this server ignored, please check with the system admin");
-		}
+				}.start();
+			}
+			else
+			{
+				throw new Exception("You should not this server ignored, please check with the system admin");
+			}
 			if (event.getSimulationTime() > this.watchedServer.get(serverId) + Server.maxServerWatch)
 			{
 				this.watchedServer.remove(serverId);
@@ -502,7 +559,8 @@ public class Server
 	{
 		this.clients.put(sender, client);
 		this.getLogger().fine("New client : " + sender);
-		if (this.hasOutput()) System.out.println("New client : " + sender);
+		if (this.hasOutput())
+			System.out.println("New client : " + sender);
 		return this.state;
 	}
 
@@ -523,12 +581,14 @@ public class Server
 		address.replace("//:", "//" + Inet4Address.getLocalHost() + ":");
 		// if (!address.matches(Server.rmiAddressPattern))
 		// {
-		// if (this.hasOutput()) System.out.println("The address in not in a correct format");
+		// if (this.hasOutput())
+		// System.out.println("The address in not in a correct format");
 		// return;
 		// }
 		if (id == this.id)
 		{
-			if (this.hasOutput()) System.out.println("You can't modify the address of this server");
+			if (this.hasOutput())
+				System.out.println("You can't modify the address of this server");
 		}
 		// this.watch(id);
 		for (Integer i : this.serverAddress.keySet())
@@ -617,11 +677,14 @@ public class Server
 	@Override
 	public void onGameOver()
 	{
-		if (this.hasOutput()) System.out.println("Survivors:");
+		if (this.hasOutput())
+			System.out.println("Survivors:");
 		for (Point point : this.state)
 			if (this.state.get(point) != null)
-				if (this.hasOutput()) System.out.println(" " + this.state.get(point));
-		if (this.hasOutput()) System.out.println("Game is over. The server can now be closed.");
+				if (this.hasOutput())
+					System.out.println(" " + this.state.get(point));
+		if (this.hasOutput())
+			System.out.println("Game is over. The server can now be closed.");
 	}
 
 
